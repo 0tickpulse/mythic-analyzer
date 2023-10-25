@@ -38,6 +38,17 @@
         }
     ],
     "rules": {
-        "func-style": "off"
+        "@typescript-eslint/no-shadow": "off",
+        "func-style": "off",
+        "no-undef": "off",
+        "@typescript-eslint/parameter-properties": "off",
+        "@typescript-eslint/no-use-before-define": "off",
+        "@typescript-eslint/brace-style": [
+            "error",
+            "1tbs",
+            {
+                "allowSingleLine": true
+            }
+        ]
     }
 }
