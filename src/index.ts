@@ -19,3 +19,5 @@ export class Workspace {
         this.docs.set(doc.uri.toString(), doc);
     }
 }
+
+export * from "./doc";
