@@ -3,7 +3,7 @@
   "version": "0.0.1",
   "repository": "https://github.com/0tickpulse/mythic-analyzer",
   "author": "0tickpulse",
-  "license": "MIT",
+  "license": "AGPL-3.0-or-later",
   "scripts": {
     "test": "NODE_ENV=test jest",
     "docs": "typedoc src/index.ts --skipErrorChecking --out docs --includeVersion",
