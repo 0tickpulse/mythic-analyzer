@@ -49,6 +49,14 @@
             {
                 "allowSingleLine": true
             }
+        ],
+        "max-statements": [
+            "error",
+            30
+        ],
+        "max-lines-per-function": [
+            "error",
+            60
         ]
     }
 }

@@ -34,8 +34,11 @@
   "module": "./esm/index.js",
   "type": "module",
   "dependencies": {
+    "@marionebl/result": "^1.0.8",
+    "js-levenshtein": "^1.1.6",
     "picomatch": "^2.3.1",
     "vscode-languageserver": "^9.0.1",
+    "vscode-languageserver-textdocument": "^1.0.11",
     "vscode-uri": "^3.0.8",
     "yaml": "^2.3.3"
   },
@@ -49,6 +52,7 @@
     "@dzek69/eslint-config-typescript": "^1.1.1",
     "@knodes/typedoc-plugin-pages": "^0.23.4",
     "@types/jest": "^29.5.5",
+    "@types/js-levenshtein": "^1.1.2",
     "@types/node": "^20.8.8",
     "@types/picomatch": "^2.3.2",
     "@typescript-eslint/eslint-plugin": "^5.61.0",

@@ -43,7 +43,7 @@
         "noUnusedParameters": false,
         "outDir": "./esm",
         "outFile": null,
-        "paths": null,
+        "paths": {},
         "preserveSymlinks": false,
         "preserveValueImports": false,
         "removeComments": true,
@@ -61,7 +61,7 @@
         "tsBuildInfoFile": null,
         "typeRoots": null,
         "types": null,
-        "useUnknownInCatchVariables": true
+        "useUnknownInCatchVariables": true,
     },
     "include": [
         "src/"

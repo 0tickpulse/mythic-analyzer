@@ -1,11 +1,15 @@
 import { readFile } from "fs/promises";
 
+import { Result } from "@marionebl/result";
 import { URI } from "vscode-uri";
+import { parseDocument } from "yaml";
 
-import type { Position, Range } from "vscode-languageserver";
-import type { Range as YamlRange } from "yaml";
 import type { PathLike } from "fs";
-import type { Schema } from "./schema/schema.js";
+import type { Position, Range } from "vscode-languageserver";
+import type { TextDocument } from "vscode-languageserver-textdocument";
+import type { ParsedNode, Range as YamlRange } from "yaml";
+import type { Workspace } from "../index.js";
+import type { Schema, ValidationResult } from "./schema/schema.js";
 
 import { findSchema } from "./schema/pathmap.js";
 
@@ -17,7 +21,9 @@ export class MythicDoc {
      * A cached array of the lengths of each line in the document.
      * Used for calculating the position of a character in the document.
      */
-    protected readonly lineLengths = this.source.split("\n").map((line) => line.length);
+    protected readonly lineLengths: number[];
+
+    public cachedValidationResult?: ValidationResult;
 
     public constructor(
         /**
@@ -31,8 +37,10 @@ export class MythicDoc {
         /**
          * The schema of the document, if any.
          */
-        public readonly schema?: Schema,
-    ) {}
+        public schema?: Schema,
+    ) {
+        this.lineLengths = this.source.split("\n").map((line) => line.length);
+    }
 
     /**
      * Creates a new MythicDoc by reading the contents of a file given by its path.
@@ -40,8 +48,27 @@ export class MythicDoc {
      * @param path The path to the file to read.
      * @returns A {@link Promise} that resolves to the new MythicDoc.
      */
-    public static async fromFilePath(path: PathLike): Promise<MythicDoc> {
-        return new MythicDoc(await readFile(path, "utf-8"), URI.file(path.toString()), findSchema(path.toString()));
+    public static async fromFilePath(path: PathLike): Promise<Result<MythicDoc, string>> {
+        const source = await readFile(path, "utf-8");
+        if (!source) {
+            // eslint-disable-next-line new-cap -- this is a static method. I presume this library uses 'Result.Err' with caps E because of how Rust does it.
+            return Result.Err(`Failed to read file at ${path.toString()}.`);
+        }
+        // eslint-disable-next-line new-cap -- see above
+        return Result.Ok(
+            new MythicDoc(
+                source,
+                URI.file(path.toString()),
+                findSchema(path.toString()),
+            ),
+        );
+    }
+
+    /**
+     * Creates a new MythicDoc from a LSP {@link TextDocument}.
+     */
+    public static fromTextDocument(doc: TextDocument) {
+        return new MythicDoc(doc.getText(), URI.parse(doc.uri), findSchema(doc.uri));
     }
 
     /**
@@ -72,12 +99,20 @@ export class MythicDoc {
      * @param position The position to convert.
      */
     public convertToPosition(position: number): Position {
-        let line = 0, column = position;
-        while (column > this.lineLengths[line]!) {
-            column -= this.lineLengths[line]!;
-            line++;
+        // 0 is first line
+        let pos = position,
+            line = 0,
+            character = 0;
+        const len = this.lineLengths.length;
+        for (let i = 0; i < len; i++) {
+            const lineLength = this.lineLengths[i]! + 1;
+            if (pos < lineLength) {
+                line = i;
+                character = pos;
+                break;
+            }
+            pos -= lineLength;
         }
-        const character = column;
         return { line, character };
     }
 
@@ -87,11 +122,35 @@ export class MythicDoc {
      * @param position The position to convert.
      */
     public convertToYamlPosition(position: Position): number {
-        let line = 0, column = position.character;
-        while (line < position.line) {
-            column += this.lineLengths[line]!;
-            line++;
+        let offset = 0;
+        for (let i = 0; i < position.line; i++) {
+            offset += this.lineLengths[i]! + 1;
         }
-        return column;
+        offset += position.character;
+        return offset;
+    }
+
+    /**
+     * Parses the document into a YAML AST.
+     */
+    public parse(): ParsedNode {
+        return parseDocument(this.source, {
+            keepSourceTokens: true,
+        }).contents!;
+    }
+
+    /**
+     * Partially processes the document against its schema.
+     *
+     * **Note:** This method mutates the document by caching the result of the validation.
+     *
+     * @param workspace The workspace to validate the document in.
+     */
+    public partialProcess(workspace: Workspace): ValidationResult | undefined {
+        const res = this.schema?.partialProcess(workspace, this, this.parse());
+        if (res) {
+            this.cachedValidationResult = res;
+        }
+        return res;
     }
 }

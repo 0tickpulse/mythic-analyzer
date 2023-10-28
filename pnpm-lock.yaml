@@ -5,12 +5,21 @@ settings:
   excludeLinksFromLockfile: false
 
 dependencies:
+  '@marionebl/result':
+    specifier: ^1.0.8
+    version: 1.0.8
+  js-levenshtein:
+    specifier: ^1.1.6
+    version: 1.1.6
   picomatch:
     specifier: ^2.3.1
     version: 2.3.1
   vscode-languageserver:
     specifier: ^9.0.1
     version: 9.0.1
+  vscode-languageserver-textdocument:
+    specifier: ^1.0.11
+    version: 1.0.11
   vscode-uri:
     specifier: ^3.0.8
     version: 3.0.8
@@ -46,6 +55,9 @@ devDependencies:
   '@types/jest':
     specifier: ^29.5.5
     version: 29.5.5
+  '@types/js-levenshtein':
+    specifier: ^1.1.2
+    version: 1.1.2
   '@types/node':
     specifier: ^20.8.8
     version: 20.8.8
@@ -1731,6 +1743,18 @@ packages:
       typedoc: 0.23.28(typescript@5.2.2)
     dev: true
 
+  /@marionebl/option@1.0.8:
+    resolution: {integrity: sha512-Bci8ZUM5Bf4cbN814aUmuURJTOpaHaYoeVFj09usP41BEUUX3vBSOOP0p/0XxE1+ipn6nH0FDZWUW2UO+6YyRg==}
+    dependencies:
+      '@marionebl/result': 1.0.8
+    dev: false
+
+  /@marionebl/result@1.0.8:
+    resolution: {integrity: sha512-eEHcr17US1aeCiiRK//12dr1NOZ9WqKVWqjyIrF4SP4O5R/JhjK9gCSMYGiHZCIefpKDOzUrgPuvPdF1O2KcYg==}
+    dependencies:
+      '@marionebl/option': 1.0.8
+    dev: false
+
   /@nodelib/fs.scandir@2.1.5:
     resolution: {integrity: sha512-vq24Bq3ym5HEQm2NKCr3yXDwjc7vTsEThRDnkp2DK9p1uqLR+DHurm/NOTo0KG7HYHU7eppKZj3MyqYuMBf62g==}
     engines: {node: '>= 8'}
@@ -1840,6 +1864,10 @@ packages:
     dependencies:
       expect: 29.7.0
       pretty-format: 29.7.0
+    dev: true
+
+  /@types/js-levenshtein@1.1.2:
+    resolution: {integrity: sha512-/NCbMABw2uacuyE16Iwka1EzREDD50/W2ggRBad0y1WHBvAkvR9OEINxModVY7D428gXBe0igeVX7bUc9GaslQ==}
     dev: true
 
   /@types/json-schema@7.0.14:
@@ -4012,6 +4040,11 @@ packages:
       - ts-node
     dev: true
 
+  /js-levenshtein@1.1.6:
+    resolution: {integrity: sha512-X2BB11YZtrRqY4EnQcLX5Rh373zbK4alC1FW7D7MBhL2gtcC17cTnr6DmfHZeS0s2rTHjUTMMHfG7gO8SSdw+g==}
+    engines: {node: '>=0.10.0'}
+    dev: false
+
   /js-tokens@4.0.0:
     resolution: {integrity: sha512-RdJUflcE3cUzKiMqQgsCu06FPu9UdIJO0beYbPhHN4k6apgJtifcoCtT9bcxOpYBtpD2kCM6Sbzg4CausW/PKQ==}
     dev: true
@@ -5212,6 +5245,10 @@ packages:
     dependencies:
       vscode-jsonrpc: 8.2.0
       vscode-languageserver-types: 3.17.5
+    dev: false
+
+  /vscode-languageserver-textdocument@1.0.11:
+    resolution: {integrity: sha512-X+8T3GoiwTVlJbicx/sIAF+yuJAqz8VvwJyoMVhwEMoEKE/fkDmrqUgDMyBECcM2A2frVZIUj5HI/ErRXCfOeA==}
     dev: false
 
   /vscode-languageserver-types@3.17.5:

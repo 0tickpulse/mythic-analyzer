@@ -1,2 +1,2 @@
 export * from "./schema";
-export * from "./mythicdoc.js";
+export * from "./mythicdoc";
