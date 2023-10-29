@@ -9,6 +9,6 @@ export const MYTHIC_SKILL_SCHEMA = new SchemaMap([], new SchemaObject([], {
         required: false,
         description:
             "The cooldown of this skill in seconds."
-            + mdSeeAlso("Metaskills#cooldown"),
+            + mdSeeAlso("Skills/Metaskills#cooldown"),
     },
 }));
