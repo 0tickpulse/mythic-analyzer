@@ -46,15 +46,22 @@ class ValidationResult {
  */
 class Schema {
     /**
-     * Any further processes that should be run on the value.
+     * Any further processes that should be run on the value during partial processing.
      */
-    public readonly processes: SchemaValueOrFn<
-    ((
+    #partialProcesses: ((
         ws: Workspace,
         doc: MythicDoc,
         value: ParsedNode
-    ) => ValidationResult)[]
-    > = [];
+    ) => ValidationResult)[] = [];
+
+    /**
+     * Any further processes that should be run on the value during full processing.
+     */
+    #fullProcesses: ((
+        ws: Workspace,
+        doc: MythicDoc,
+        value: ParsedNode
+    ) => ValidationResult)[] = [];
 
     /**
      * Partially processes a document. Should be used to do simple checks on a document.
@@ -68,7 +75,16 @@ class Schema {
         doc: MythicDoc,
         value: ParsedNode,
     ): ValidationResult {
-        return new ValidationResult();
+        const result = new ValidationResult();
+        for (const process of this.resolveValueOrFn(
+            ws,
+            doc,
+            value,
+            this.#partialProcesses,
+        )) {
+            result.merge(process(ws, doc, value));
+        }
+        return result;
     }
 
     /**
@@ -79,9 +95,18 @@ class Schema {
      * @param value The value to process.
      * @returns A {@link ValidationResult} containing any errors and other things.
      */
-    public fullProcess(ws: Workspace, doc: MythicDoc, value: ParsedNode): ValidationResult {
+    public fullProcess(
+        ws: Workspace,
+        doc: MythicDoc,
+        value: ParsedNode,
+    ): ValidationResult {
         const result = new ValidationResult();
-        for (const process of this.resolveValueOrFn(ws, doc, value, this.processes)) {
+        for (const process of this.resolveValueOrFn(
+            ws,
+            doc,
+            value,
+            this.#fullProcesses,
+        )) {
             result.merge(process(ws, doc, value));
         }
         return result;
@@ -124,11 +149,42 @@ class Schema {
      * @param value     The value to resolve the value in.
      * @param valueOrFn The value or function to resolve.
      */
-    protected resolveValueOrFn<T>(ws: Workspace, doc: MythicDoc, value: ParsedNode, valueOrFn: SchemaValueOrFn<T>): T {
+    protected resolveValueOrFn<T>(
+        ws: Workspace,
+        doc: MythicDoc,
+        value: ParsedNode,
+        valueOrFn: SchemaValueOrFn<T>,
+    ): T {
         if (typeof valueOrFn === "function") {
             return valueOrFn(ws, doc, value) as T;
         }
         return valueOrFn as T;
+    }
+
+    /**
+     * Adds a partial process to the schema.
+     */
+    public onPartialProcess(
+        process: (
+            ws: Workspace,
+            doc: MythicDoc,
+            value: ParsedNode
+        ) => ValidationResult,
+    ): void {
+        this.#partialProcesses.push(process);
+    }
+
+    /**
+     * Adds a full process to the schema.
+     */
+    public onFullProcess(
+        process: (
+            ws: Workspace,
+            doc: MythicDoc,
+            value: ParsedNode
+        ) => ValidationResult,
+    ): void {
+        this.#fullProcesses.push(process);
     }
 }
 
