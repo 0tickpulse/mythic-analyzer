@@ -45,18 +45,16 @@ class ValidationResult {
  * This is also used as the base schema for all other schemas.
  */
 class Schema {
-    public constructor(
-        /**
-         * Any further processes that should be run on the value.
-         */
-        public readonly processes: SchemaValueOrFn<
-        ((
-            ws: Workspace,
-            doc: MythicDoc,
-            value: ParsedNode
-        ) => ValidationResult)[]
-        > = [],
-    ) {}
+    /**
+     * Any further processes that should be run on the value.
+     */
+    public readonly processes: SchemaValueOrFn<
+    ((
+        ws: Workspace,
+        doc: MythicDoc,
+        value: ParsedNode
+    ) => ValidationResult)[]
+    > = [];
 
     /**
      * Partially processes a document. Should be used to do simple checks on a document.
@@ -97,24 +95,38 @@ class Schema {
     }
 
     /**
+     * A helper function for resolving multiples values or a functions that return a value.
+     *
+     * @param doc        The document to resolve the value in.
+     * @param value      The value to resolve the value in.
+     * @param valueOrFns The values or functions to resolve.
+     */
+    protected resolveValuesOrFns<TTypes extends readonly unknown[]>(
+        ws: Workspace,
+        doc: MythicDoc,
+        value: ParsedNode,
+        ...valueOrFns: {
+            [K in keyof TTypes]: SchemaValueOrFn<TTypes[K]>;
+        } & { length: TTypes["length"] }
+    ): TTypes {
+        return valueOrFns.map((valueOrFn) => {
+            if (typeof valueOrFn === "function") {
+                return valueOrFn(ws, doc, value) as unknown as TTypes[number];
+            }
+            return valueOrFn;
+        }) as unknown as TTypes;
+    }
+
+    /**
      * A helper function for resolving a value or a function that returns a value.
      *
      * @param doc       The document to resolve the value in.
      * @param value     The value to resolve the value in.
      * @param valueOrFn The value or function to resolve.
      */
-    protected resolveValueOrFn<T>(
-        ws: Workspace,
-        doc: MythicDoc,
-        value: ParsedNode,
-        valueOrFn: SchemaValueOrFn<T>,
-    ): T {
+    protected resolveValueOrFn<T>(ws: Workspace, doc: MythicDoc, value: ParsedNode, valueOrFn: SchemaValueOrFn<T>): T {
         if (typeof valueOrFn === "function") {
-            return (valueOrFn as (ws: Workspace, doc: MythicDoc, value: ParsedNode) => T)(
-                ws,
-                doc,
-                value,
-            );
+            return valueOrFn(ws, doc, value) as T;
         }
         return valueOrFn as T;
     }

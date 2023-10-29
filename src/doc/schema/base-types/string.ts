@@ -10,16 +10,10 @@ import { Schema, ValidationResult } from "../schema.js";
 
 export class SchemaString extends Schema {
     public constructor(
-        public override readonly processes: SchemaValueOrFn<
-        ((
-            ws: Workspace,
-            doc: MythicDoc,
-            value: ParsedNode
-        ) => ValidationResult)[]> = [],
         public readonly matcher?: SchemaValueOrFn<string | RegExp>,
         public readonly caseSensitive: SchemaValueOrFn<boolean> = false,
     ) {
-        super(processes);
+        super();
     }
 
     public override toString(ws: Workspace, doc: MythicDoc, value: ParsedNode): string {

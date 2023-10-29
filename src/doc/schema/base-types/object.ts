@@ -9,15 +9,9 @@ import { Schema, ValidationResult } from "../schema.js";
 
 export class SchemaObject extends Schema {
     public constructor(
-        public override readonly processes: SchemaValueOrFn<
-        ((
-            ws: Workspace,
-            doc: MythicDoc,
-            value: ParsedNode
-        ) => ValidationResult)[]> = [],
         public readonly properties: SchemaValueOrFn<Record<string, SchemaObjectProperty>> = {},
     ) {
-        super(processes);
+        super();
     }
 
     public override toString(ws: Workspace, doc: MythicDoc, value: ParsedNode): string {

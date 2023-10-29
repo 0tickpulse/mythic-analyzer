@@ -7,20 +7,14 @@ import { DIAGNOSTIC_DEFAULT } from "../../../errors.js";
 
 export class SchemaNumber extends Schema {
     public constructor(
-        public override readonly processes: SchemaValueOrFn<
-        ((
-            ws: Workspace,
-            doc: MythicDoc,
-            value: ParsedNode
-        ) => ValidationResult)[]
-        > = [],
+
         public readonly min?: SchemaValueOrFn<number>,
         public readonly max?: SchemaValueOrFn<number>,
         public readonly minInclusive: SchemaValueOrFn<boolean> = true,
         public readonly maxInclusive: SchemaValueOrFn<boolean> = true,
         public readonly integer: SchemaValueOrFn<boolean> = false,
     ) {
-        super(processes);
+        super();
     }
 
     public override partialProcess(ws: Workspace, doc: MythicDoc, value: ParsedNode): ValidationResult {
@@ -34,11 +28,13 @@ export class SchemaNumber extends Schema {
             ]);
         }
 
-        const min = this.resolveValueOrFn(ws, doc, value, this.min);
-        const max = this.resolveValueOrFn(ws, doc, value, this.max);
-        const minInclusive = this.resolveValueOrFn(ws, doc, value, this.minInclusive);
-        const maxInclusive = this.resolveValueOrFn(ws, doc, value, this.maxInclusive);
-        const integer = this.resolveValueOrFn(ws, doc, value, this.integer);
+        const [min, max, minInclusive, maxInclusive, integer] = this.resolveValuesOrFns(ws, doc, value,
+            this.min,
+            this.max,
+            this.minInclusive,
+            this.maxInclusive,
+            this.integer,
+        );
 
         const num = value.toJSON() as number;
         if (min !== undefined) {
@@ -76,11 +72,13 @@ export class SchemaNumber extends Schema {
     }
 
     public override toString(ws: Workspace, doc: MythicDoc, value: ParsedNode) {
-        const min = this.resolveValueOrFn(ws, doc, value, this.min);
-        const max = this.resolveValueOrFn(ws, doc, value, this.max);
-        const minInclusive = this.resolveValueOrFn(ws, doc, value, this.minInclusive);
-        const maxInclusive = this.resolveValueOrFn(ws, doc, value, this.maxInclusive);
-        const integer = this.resolveValueOrFn(ws, doc, value, this.integer);
+        const [min, max, minInclusive, maxInclusive, integer] = this.resolveValuesOrFns(ws, doc, value,
+            this.min,
+            this.max,
+            this.minInclusive,
+            this.maxInclusive,
+            this.integer,
+        );
 
         let res = integer ? "integer" : "number";
         if (min !== undefined || max !== undefined) {
