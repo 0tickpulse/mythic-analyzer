@@ -25,7 +25,7 @@ export class SchemaList extends Schema {
                 .map((item) => item.toString(ws, doc, value))
                 .join(", ")}]`;
         }
-        return `${this.items.toString(ws, doc, value)}[]`;
+        return `list(${this.items.toString(ws, doc, value)})`;
     }
 
     public override partialProcess(
