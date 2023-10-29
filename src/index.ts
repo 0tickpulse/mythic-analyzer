@@ -132,11 +132,7 @@ class Workspace {
             }).catch((err) => {
                 this.logger?.error(`Failed to send diagnostics for ${change.document.uri}: ${String(err)}`);
             });
-            let doc = this.docs.get(change.document.uri);
-            if (!doc) {
-                this.logger?.log(`Document ${change.document.uri} not found. Creating new document.`);
-                doc = MythicDoc.fromTextDocument(change.document);
-            }
+            const doc = MythicDoc.fromTextDocument(change.document);
             this.load(doc);
             const diags = doc.cachedValidationResult?.diagnostics;
             connection.sendDiagnostics({
