@@ -18,14 +18,15 @@ export class SchemaNumber extends Schema {
     }
 
     public override partialProcess(ws: Workspace, doc: MythicDoc, value: ParsedNode): ValidationResult {
+        const result = super.partialProcess(ws, doc, value);
         if (typeof value.toJSON() !== "number") {
-            return new ValidationResult([
+            return result.toMerged(new ValidationResult([
                 {
                     ...DIAGNOSTIC_DEFAULT,
                     message: `Expected ${this.toString(ws, doc, value)}.`,
                     range: doc.convertToRange(value.range),
                 },
-            ]);
+            ]));
         }
 
         const [min, max, minInclusive, maxInclusive, integer] = this.resolveValuesOrFns(ws, doc, value,
@@ -39,39 +40,39 @@ export class SchemaNumber extends Schema {
         const num = value.toJSON() as number;
         if (min !== undefined) {
             if (minInclusive ? num < min : num <= min) {
-                return new ValidationResult([
+                return result.toMerged(new ValidationResult([
                     {
                         ...DIAGNOSTIC_DEFAULT,
                         message: `Expected value to be greater than ${min}, but got ${num}.`,
                         range: doc.convertToRange(value.range),
                     },
-                ]);
+                ]));
             }
         }
         if (max !== undefined) {
             if (maxInclusive ? num > max : num >= max) {
-                return new ValidationResult([
+                return result.toMerged(new ValidationResult([
                     {
                         ...DIAGNOSTIC_DEFAULT,
                         message: `Expected value to be less than ${max}, but got ${num}.`,
                         range: doc.convertToRange(value.range),
                     },
-                ]);
+                ]));
             }
         }
         if (integer && !Number.isInteger(num)) {
-            return new ValidationResult([
+            return result.toMerged(new ValidationResult([
                 {
                     ...DIAGNOSTIC_DEFAULT,
                     message: `Expected value to be an integer, but got ${num}.`,
                     range: doc.convertToRange(value.range),
                 },
-            ]);
+            ]));
         }
-        return new ValidationResult();
+        return result;
     }
 
-    public override toString(ws: Workspace, doc: MythicDoc, value: ParsedNode) {
+    public override internalName(ws: Workspace, doc: MythicDoc, value: ParsedNode) {
         const [min, max, minInclusive, maxInclusive, integer] = this.resolveValuesOrFns(ws, doc, value,
             this.min,
             this.max,

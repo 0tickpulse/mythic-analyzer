@@ -16,19 +16,30 @@ export class SchemaString extends Schema {
         super();
     }
 
-    public override toString(ws: Workspace, doc: MythicDoc, value: ParsedNode): string {
+    public override internalName(
+        ws: Workspace,
+        doc: MythicDoc,
+        value: ParsedNode,
+    ): string {
         return "string";
     }
 
-    public override partialProcess(ws: Workspace, doc: MythicDoc, value: ParsedNode): ValidationResult {
+    public override partialProcess(
+        ws: Workspace,
+        doc: MythicDoc,
+        value: ParsedNode,
+    ): ValidationResult {
+        const result = super.partialProcess(ws, doc, value);
         if (!isScalar(value)) {
-            return new ValidationResult([
-                {
-                    ...DIAGNOSTIC_DEFAULT,
-                    message: `Expected ${this.toString(ws, doc, value)}.`,
-                    range: doc.convertToRange(value.range),
-                },
-            ]);
+            return result.toMerged(
+                new ValidationResult([
+                    {
+                        ...DIAGNOSTIC_DEFAULT,
+                        message: `Expected ${this.toString(ws, doc, value)}.`,
+                        range: doc.convertToRange(value.range),
+                    },
+                ]),
+            );
         }
         const matcher = this.resolveValueOrFn(ws, doc, value, this.matcher);
         if (matcher === undefined) {
@@ -38,26 +49,24 @@ export class SchemaString extends Schema {
         const string = value.toJSON() as string;
         if (matcher instanceof RegExp) {
             if (!matcher.test(string)) {
-                return new ValidationResult([
-                    {
-                        ...DIAGNOSTIC_DEFAULT,
-                        message: `Expected a string matching ${matcher.source}, but got ${string}.`,
-                        range: doc.convertToRange(value.range),
-                    },
-                ]);
+                result.diagnostics.push({
+                    ...DIAGNOSTIC_DEFAULT,
+                    message: `Expected a string matching ${matcher.source}, but got ${string}.`,
+                    range: doc.convertToRange(value.range),
+                });
+                return result;
             }
         } else {
             if (!this.#equals(matcher, string, cs)) {
-                return new ValidationResult([
-                    {
-                        ...DIAGNOSTIC_DEFAULT,
-                        message: `Expected ${matcher}, but got ${string}.`,
-                        range: doc.convertToRange(value.range),
-                    },
-                ]);
+                result.diagnostics.push({
+                    ...DIAGNOSTIC_DEFAULT,
+                    message: `Expected ${matcher}, but got ${string}.`,
+                    range: doc.convertToRange(value.range),
+                });
+                return result;
             }
         }
-        return new ValidationResult();
+        return result;
     }
 
     #equals(a: string, b: string, cs: boolean): boolean {

@@ -7,6 +7,14 @@ export function initializeHandler(workspace: Workspace) {
         return {
             capabilities: {
                 hoverProvider: true,
+                semanticTokensProvider: {
+                    full: true,
+                    range: false,
+                    legend: {
+                        tokenTypes: workspace.semanticTokenTypes,
+                        tokenModifiers: workspace.semanticTokenModifiers,
+                    },
+                },
             },
         };
     };

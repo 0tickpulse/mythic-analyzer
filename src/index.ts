@@ -1,4 +1,4 @@
-import { TextDocuments } from "vscode-languageserver";
+import { TextDocuments, SemanticTokenTypes, SemanticTokenModifiers } from "vscode-languageserver";
 import { TextDocument } from "vscode-languageserver-textdocument";
 
 import type { Connection } from "vscode-languageserver";
@@ -9,6 +9,7 @@ import { STDOUT_LOGGER } from "./logger.js";
 import { initializeHandler } from "./lsp/listeners/initialize.js";
 import { hoverHandler } from "./lsp/listeners/hover.js";
 import { recursiveReadDir } from "./util/files.js";
+import { semanticTokenHandler } from "./lsp/listeners/semantictokens.js";
 
 async function main() {
     process.stdout.write("== MYTHIC ANALYZER CLI ==\n");
@@ -59,6 +60,46 @@ class Workspace {
      */
     public readonly docs = new Map<string, MythicDoc>();
 
+    public readonly partialParseQueue = new Set<MythicDoc>();
+
+    public readonly fullParseQueue = new Set<MythicDoc>();
+
+    /**
+     * The semantic token types that the workspace supports.
+     */
+    public readonly semanticTokenTypes: SemanticTokenTypes[] = [
+        SemanticTokenTypes.namespace,
+        SemanticTokenTypes.type,
+        SemanticTokenTypes.class,
+        SemanticTokenTypes.enum,
+        SemanticTokenTypes.interface,
+        SemanticTokenTypes.struct,
+        SemanticTokenTypes.typeParameter,
+        SemanticTokenTypes.parameter,
+        SemanticTokenTypes.variable,
+        SemanticTokenTypes.property,
+        SemanticTokenTypes.enumMember,
+        SemanticTokenTypes.event,
+        SemanticTokenTypes.function,
+        SemanticTokenTypes.method,
+        SemanticTokenTypes.macro,
+        SemanticTokenTypes.keyword,
+        SemanticTokenTypes.modifier,
+        SemanticTokenTypes.comment,
+        SemanticTokenTypes.string,
+        SemanticTokenTypes.number,
+        SemanticTokenTypes.regexp,
+        SemanticTokenTypes.operator,
+        SemanticTokenTypes.decorator,
+    ];
+
+    /**
+     * The semantic token modifiers that the workspace supports.
+     */
+    public readonly semanticTokenModifiers: SemanticTokenModifiers[] = [
+        SemanticTokenModifiers.declaration,
+    ];
+
     /**
      * A logger for the workspcae for debugging purposes.
      * You must implement this yourself.
@@ -80,6 +121,7 @@ class Workspace {
 
     /**
      * Loads all files in a folder into the workspace.
+     * Calls {@link Workspace#load} for each file.
      *
      * @param folder The folder to load files from.
      */
@@ -124,6 +166,7 @@ class Workspace {
         const documents = new TextDocuments(TextDocument);
         connection.onInitialize(initializeHandler(this));
         connection.onHover(hoverHandler(this));
+        connection.languages.semanticTokens.on(semanticTokenHandler(this));
         documents.onDidChangeContent((change) => {
             this.logger?.log(`Document ${change.document.uri} changed.`);
             connection.sendDiagnostics({
@@ -141,9 +184,28 @@ class Workspace {
             }).catch((err) => {
                 this.logger?.error(`Failed to send diagnostics for ${change.document.uri}: ${String(err)}`);
             });
+            connection.languages.semanticTokens.refresh();
         });
         documents.listen(connection);
         connection.listen();
+    }
+
+    public getAllDependenciesOf(doc: MythicDoc): MythicDoc[] {
+        // beware of cycles
+        const deps = new Set<MythicDoc>();
+        const queue = [doc];
+        while (queue.length !== 0) {
+            const doc = queue.pop()!;
+            for (const dep of doc.dependencies) {
+                const depDoc = this.get(dep);
+                if (!depDoc) {
+                    continue;
+                }
+                deps.add(depDoc);
+                queue.push(depDoc);
+            }
+        }
+        return Array.from(deps);
     }
 }
 
@@ -154,5 +216,7 @@ if (require.main === module) {
 }
 
 export * from "./doc";
+export * from "./document-models";
+export * from "./errors";
 export * from "./logger";
 export { Workspace };

@@ -3,19 +3,28 @@ import { isMap, isScalar } from "yaml";
 import type { ParsedNode } from "yaml";
 import type { MythicDoc } from "../../mythicdoc.js";
 import type { SchemaValueOrFn, Workspace } from "../../../index.js";
+import type { ValidationResult } from "../schema.js";
 
 import { DIAGNOSTIC_DEFAULT } from "../../../errors.js";
-import { Schema, ValidationResult } from "../schema.js";
+import { Schema } from "../schema.js";
 
 export class SchemaObject extends Schema {
     public constructor(
-        public readonly properties: SchemaValueOrFn<Record<string, SchemaObjectProperty>> = {},
+        public readonly properties: SchemaValueOrFn<
+        Record<string, SchemaObjectProperty>
+        > = {},
     ) {
         super();
     }
 
-    public override toString(ws: Workspace, doc: MythicDoc, value: ParsedNode): string {
-        return `{ ${Object.entries(this.resolveValueOrFn(ws, doc, value, this.properties))
+    public override internalName(
+        ws: Workspace,
+        doc: MythicDoc,
+        value: ParsedNode,
+    ): string {
+        return `{ ${Object.entries(
+            this.resolveValueOrFn(ws, doc, value, this.properties),
+        )
             .map(([key, property]) => {
                 return `${key}: ${property.schema.toString(ws, doc, value)}`;
             })
@@ -27,17 +36,21 @@ export class SchemaObject extends Schema {
         doc: MythicDoc,
         value: ParsedNode,
     ): ValidationResult {
+        const result = super.partialProcess(ws, doc, value);
         if (!isMap(value)) {
-            return new ValidationResult([
-                {
-                    ...DIAGNOSTIC_DEFAULT,
-                    message: `Expected ${this.toString(ws, doc, value)}.`,
-                    range: doc.convertToRange(value.range),
-                },
-            ]);
+            result.diagnostics.push({
+                ...DIAGNOSTIC_DEFAULT,
+                message: `Expected ${this.toString(ws, doc, value)}.`,
+                range: doc.convertToRange(value.range),
+            });
+            return result;
         }
-        const result = new ValidationResult();
-        const properties = this.resolveValueOrFn(ws, doc, value, this.properties);
+        const properties = this.resolveValueOrFn(
+            ws,
+            doc,
+            value,
+            this.properties,
+        );
         for (const [key, property] of Object.entries(properties)) {
             // const node = value.get(key);
             const pair = value.items.find(
@@ -61,15 +74,21 @@ export class SchemaObject extends Schema {
                 });
                 continue;
             }
+            let hover = `\`${key}\`: \`${property.schema.toString(
+                ws,
+                doc,
+                pair.value,
+            )}\``;
             if (property.description) {
-                result.hovers.push({
-                    range: doc.convertToRange(pair.key.range),
-                    contents: property.description,
-                });
+                hover += `\n\n${property.description}`;
             }
+            result.hovers.push({
+                range: doc.convertToRange(pair.key.range),
+                contents: hover,
+            });
+
             result.merge(property.schema.partialProcess(ws, doc, pair.value));
         }
-        // check for extra properties
         for (const pair of value.items) {
             const key = pair.key;
             if (!properties[key.toString()]) {
@@ -86,6 +105,6 @@ export class SchemaObject extends Schema {
 
 export type SchemaObjectProperty = {
     schema: Schema;
-    required?: boolean;
-    description?: string;
+    required?: boolean | undefined;
+    description?: string | undefined;
 };

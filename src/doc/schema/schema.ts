@@ -2,6 +2,8 @@ import type { DefinitionLink, Diagnostic, Hover } from "vscode-languageserver";
 import type { ParsedNode } from "yaml";
 import type { MythicDoc } from "../mythicdoc.js";
 import type { Workspace } from "../../index.js";
+import type { MythicSkill } from "../../document-models/mythicskill.js";
+import type { Highlight } from "../../lsp/models/highlight.js";
 
 /**
  * The result after validating a value against a schema.
@@ -11,6 +13,8 @@ class ValidationResult {
         public readonly diagnostics: Diagnostic[] = [],
         public readonly hovers: Required<Hover>[] = [],
         public readonly definitionLinks: DefinitionLink[] = [],
+        public readonly mythicSkills: MythicSkill[] = [],
+        public readonly highlights: Highlight[] = [],
     ) {}
 
     /**
@@ -21,9 +25,11 @@ class ValidationResult {
      */
     public toMerged(other: ValidationResult): ValidationResult {
         return new ValidationResult(
-            this.diagnostics.concat(other.diagnostics),
-            this.hovers.concat(other.hovers),
-            this.definitionLinks.concat(other.definitionLinks),
+            [...this.diagnostics, ...other.diagnostics],
+            [...this.hovers, ...other.hovers],
+            [...this.definitionLinks, ...other.definitionLinks],
+            [...this.mythicSkills, ...other.mythicSkills],
+            [...this.highlights, ...other.highlights],
         );
     }
 
@@ -37,6 +43,8 @@ class ValidationResult {
         this.diagnostics.push(...other.diagnostics);
         this.hovers.push(...other.hovers);
         this.definitionLinks.push(...other.definitionLinks);
+        this.mythicSkills.push(...other.mythicSkills);
+        this.highlights.push(...other.highlights);
     }
 }
 
@@ -46,22 +54,26 @@ class ValidationResult {
  */
 class Schema {
     /**
-     * Any further processes that should be run on the value during partial processing.
+     * Any further processes that should be run on the value before partial processing.
      */
     #partialProcesses: ((
         ws: Workspace,
         doc: MythicDoc,
-        value: ParsedNode
-    ) => ValidationResult)[] = [];
+        value: ParsedNode,
+        currentResult: ValidationResult
+    ) => void)[] = [];
 
     /**
-     * Any further processes that should be run on the value during full processing.
+     * Any further processes that should be run on the value before full processing.
      */
     #fullProcesses: ((
         ws: Workspace,
         doc: MythicDoc,
-        value: ParsedNode
-    ) => ValidationResult)[] = [];
+        value: ParsedNode,
+        currentResult: ValidationResult
+    ) => void)[] = [];
+
+    public name?: string;
 
     /**
      * Partially processes a document. Should be used to do simple checks on a document.
@@ -82,14 +94,14 @@ class Schema {
             value,
             this.#partialProcesses,
         )) {
-            result.merge(process(ws, doc, value));
+            process(ws, doc, value, result);
         }
         return result;
     }
 
     /**
      * Processes a document fully. Should be used when the document is open in the editor, or in the terminal.
-     * This should not call {@link Schema.partialProcess} as that will automatically be called before this.
+     * This should not call {@link Schema#partialProcess} as that will automatically be called before this.
      *
      * @param doc   The document to process.
      * @param value The value to process.
@@ -107,16 +119,21 @@ class Schema {
             value,
             this.#fullProcesses,
         )) {
-            result.merge(process(ws, doc, value));
+            process(ws, doc, value, result);
         }
         return result;
     }
 
-    /**
-     * Returns a string representation of the schema. This is used for error messages, hovers, etc.
-     */
-    public toString(ws: Workspace, doc: MythicDoc, value: ParsedNode): string {
+    public internalName(
+        ws: Workspace,
+        doc: MythicDoc,
+        value: ParsedNode,
+    ): string {
         return "any";
+    }
+
+    public toString(ws: Workspace, doc: MythicDoc, value: ParsedNode): string {
+        return this.name ?? this.internalName(ws, doc, value);
     }
 
     /**
@@ -168,10 +185,12 @@ class Schema {
         process: (
             ws: Workspace,
             doc: MythicDoc,
-            value: ParsedNode
-        ) => ValidationResult,
-    ): void {
+            value: ParsedNode,
+            currentResult: ValidationResult
+        ) => void,
+    ): this {
         this.#partialProcesses.push(process);
+        return this;
     }
 
     /**
@@ -181,10 +200,17 @@ class Schema {
         process: (
             ws: Workspace,
             doc: MythicDoc,
-            value: ParsedNode
-        ) => ValidationResult,
-    ): void {
+            value: ParsedNode,
+            currentResult: ValidationResult
+        ) => void,
+    ): this {
         this.#fullProcesses.push(process);
+        return this;
+    }
+
+    public withName(name: string): this {
+        this.name = name;
+        return this;
     }
 }
 

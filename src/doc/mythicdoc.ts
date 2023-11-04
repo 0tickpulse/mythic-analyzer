@@ -25,6 +25,12 @@ export class MythicDoc {
 
     public cachedValidationResult?: ValidationResult;
 
+    /**
+     * A set of URIs of documents that this document depends on.
+     * When a document is processed, its dependencies are processed first.
+     */
+    public dependencies = new Set<string>();
+
     public constructor(
         /**
          * The source text of the document.

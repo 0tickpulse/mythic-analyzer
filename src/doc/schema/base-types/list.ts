@@ -12,7 +12,7 @@ export class SchemaList extends Schema {
         super();
     }
 
-    public override toString(
+    public override internalName(
         ws: Workspace,
         doc: MythicDoc,
         value: ParsedNode,
@@ -33,19 +33,19 @@ export class SchemaList extends Schema {
         doc: MythicDoc,
         value: ParsedNode,
     ): ValidationResult {
+        const result = super.partialProcess(ws, doc, value);
         if (!isSeq(value)) {
-            return new ValidationResult([
+            return result.toMerged(new ValidationResult([
                 {
                     ...DIAGNOSTIC_DEFAULT,
                     message: `Expected ${this.toString(ws, doc, value)}.`,
                     range: doc.convertToRange(value.range),
                 },
-            ]);
+            ]));
         }
         if (this.items === undefined) {
-            return new ValidationResult();
+            return result;
         }
-        const result = new ValidationResult();
         if (Array.isArray(this.items)) {
             if (value.items.length > this.items.length) {
                 result.diagnostics.push({
