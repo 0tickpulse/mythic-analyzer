@@ -1,9 +1,23 @@
-import type { Workspace } from "../../index.js";
+import { URI } from "vscode-uri";
+
 import type { InitializeParams, InitializeResult } from "vscode-languageserver";
+import type { Workspace } from "../../index.js";
 
 export function initializeHandler(workspace: Workspace) {
-    return function onInitialize(_: InitializeParams): InitializeResult {
-        workspace.logger?.log("LSP connection initialized.");
+    return async function onInitialize(
+        params: InitializeParams,
+    ): Promise<InitializeResult> {
+        workspace.logger?.log(
+            "LSP connection initialized. Loading all files...",
+        );
+        const uri = URI.parse(params.workspaceFolders![0]!.uri);
+        await workspace.loadFolder(uri.fsPath);
+        workspace.logger?.log(
+            `Loaded ${workspace.docs.size} files. Processing...`,
+        );
+        for (const doc of workspace.docs.values()) {
+            doc.partialProcess(workspace);
+        }
         return {
             capabilities: {
                 hoverProvider: true,

@@ -1,8 +1,13 @@
-import { TextDocuments, SemanticTokenTypes, SemanticTokenModifiers } from "vscode-languageserver";
+import {
+    TextDocuments,
+    SemanticTokenTypes,
+    SemanticTokenModifiers,
+} from "vscode-languageserver";
 import { TextDocument } from "vscode-languageserver-textdocument";
 
 import type { Connection } from "vscode-languageserver";
 import type { Logger } from "./logger.js";
+import type { RangeLink } from "./lsp/models/rangeLink.js";
 
 import { MythicDoc } from "./doc/mythicdoc.js";
 import { STDOUT_LOGGER } from "./logger.js";
@@ -10,6 +15,7 @@ import { initializeHandler } from "./lsp/listeners/initialize.js";
 import { hoverHandler } from "./lsp/listeners/hover.js";
 import { recursiveReadDir } from "./util/files.js";
 import { semanticTokenHandler } from "./lsp/listeners/semantictokens.js";
+import { ValidationResult } from "./doc";
 
 async function main() {
     process.stdout.write("== MYTHIC ANALYZER CLI ==\n");
@@ -29,23 +35,25 @@ async function main() {
 
     for (const doc of workspace.docs.values()) {
         workspace.logger.log(`== ${doc.uri.toString()}`);
-        const result = doc.partialProcess(workspace);
+        doc.partialProcess(workspace);
+        const result = doc.fullProcess(workspace);
         if (!result) {
             workspace.logger.log("⚠️ No validation result.");
             continue;
         }
-        const diagnostics = result.diagnostics;
-        for (const diagnostic of diagnostics) {
-            const range = diagnostic.range;
-            const message = diagnostic.message;
-            const start = range.start;
-            const end = range.end;
-            const line = start.line;
-            const character = start.character;
-            const endLine = end.line;
-            const endCharacter = end.character;
-            process.stdout.write(`${line}:${character}-${endLine}:${endCharacter} ${message}\n`);
-        }
+        workspace.logger.log(result);
+        // const diagnostics = result.diagnostics;
+        // for (const diagnostic of diagnostics) {
+        //     const range = diagnostic.range;
+        //     const message = diagnostic.message;
+        //     const start = range.start;
+        //     const end = range.end;
+        //     const line = start.line;
+        //     const character = start.character;
+        //     const endLine = end.line;
+        //     const endCharacter = end.character;
+        //     process.stdout.write(`${line}:${character}-${endLine}:${endCharacter} ${message}\n`);
+        // }
     }
 }
 
@@ -63,6 +71,20 @@ class Workspace {
     public readonly partialParseQueue = new Set<MythicDoc>();
 
     public readonly fullParseQueue = new Set<MythicDoc>();
+
+    /**
+     * Range links are links between ranges in documents.
+     * Used for things like go to definition.
+     */
+    public get rangeLinks(): RangeLink[] {
+        const links: RangeLink[] = [];
+        for (const doc of this.docs.values()) {
+            for (const link of doc.cachedValidationResult?.rangeLinks ?? []) {
+                links.push(link);
+            }
+        }
+        return links;
+    }
 
     /**
      * The semantic token types that the workspace supports.
@@ -109,14 +131,23 @@ class Workspace {
     /**
      * Loads a new document into the workspace.
      * Note that this will overwrite any existing document with the same URI.
-     *
-     * **This will partially process the document.**
+     * This does not process the document.
      *
      * @param doc The document to load.
      */
     public load(doc: MythicDoc): void {
         this.docs.set(doc.uri.toString(), doc);
-        doc.partialProcess(this); // having this after set is important because validate uses the ws to get other docs
+    }
+
+    public mergedValidationResult(): ValidationResult {
+        const res = new ValidationResult();
+        for (const doc of this.docs.values()) {
+            if (!doc.cachedValidationResult) {
+                continue;
+            }
+            res.merge(doc.cachedValidationResult);
+        }
+        return res;
     }
 
     /**
@@ -128,6 +159,9 @@ class Workspace {
     public async loadFolder(folder: string): Promise<void> {
         const files = await recursiveReadDir(folder);
         for (const file of files) {
+            if (!file.endsWith(".yaml") && !file.endsWith(".yml")) {
+                continue;
+            }
             const docResult = await MythicDoc.fromFilePath(file);
             if (await docResult.isErr()) {
                 this.logger?.error(docResult.unwrapErr());
@@ -169,21 +203,35 @@ class Workspace {
         connection.languages.semanticTokens.on(semanticTokenHandler(this));
         documents.onDidChangeContent((change) => {
             this.logger?.log(`Document ${change.document.uri} changed.`);
-            connection.sendDiagnostics({
-                uri: change.document.uri,
-                diagnostics: [],
-            }).catch((err) => {
-                this.logger?.error(`Failed to send diagnostics for ${change.document.uri}: ${String(err)}`);
-            });
+            connection
+                .sendDiagnostics({
+                    uri: change.document.uri,
+                    diagnostics: [],
+                })
+                .catch((err) => {
+                    this.logger?.error(
+                        `Failed to send diagnostics for ${
+                            change.document.uri
+                        }: ${String(err)}`,
+                    );
+                });
             const doc = MythicDoc.fromTextDocument(change.document);
+            this.logger?.log(`Loaded document ${doc.uri.toString()} after change.`);
             this.load(doc);
-            const diags = doc.cachedValidationResult?.diagnostics;
-            connection.sendDiagnostics({
-                uri: change.document.uri,
-                diagnostics: diags ?? [],
-            }).catch((err) => {
-                this.logger?.error(`Failed to send diagnostics for ${change.document.uri}: ${String(err)}`);
-            });
+            const result = doc.fullProcess(this);
+            const diags = result?.diagnostics;
+            connection
+                .sendDiagnostics({
+                    uri: change.document.uri,
+                    diagnostics: diags ?? [],
+                })
+                .catch((err) => {
+                    this.logger?.error(
+                        `Failed to send diagnostics for ${
+                            change.document.uri
+                        }: ${String(err)}`,
+                    );
+                });
             connection.languages.semanticTokens.refresh();
         });
         documents.listen(connection);
@@ -210,8 +258,8 @@ class Workspace {
 }
 
 if (require.main === module) {
-    main().catch(err => {
-        process.stderr.write(String(err));
+    main().catch((err) => {
+        process.stderr.write((err as unknown as Error).stack!);
     });
 }
 

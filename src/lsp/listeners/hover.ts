@@ -20,7 +20,7 @@ export function hoverHandler(workspace: Workspace) {
         const hoversInRange = hovers.filter((hover) => posIsIn(position, hover.range),
         );
         workspace.logger?.log(
-            `[RESPONSE] Hover, ${textDocument.uri}, no hovers in range.`,
+            `[RESPONSE] Hover, ${textDocument.uri}, ${hovers.length} hovers found, ${hoversInRange.length} in range.`,
         );
         return hoversInRange.length === 0
             ? null

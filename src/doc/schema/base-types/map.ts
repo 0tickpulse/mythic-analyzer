@@ -44,4 +44,17 @@ export class SchemaMap extends SchemaObject {
             return v;
         });
     }
+
+    public override internalName(
+        ws: Workspace,
+        doc: MythicDoc,
+        value: ParsedNode,
+    ): string {
+        return `map(${this.resolveValueOrFn(
+            ws,
+            doc,
+            value,
+            this.value,
+        ).toString(ws, doc, value)})`;
+    }
 }

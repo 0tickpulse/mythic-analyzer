@@ -1,0 +1,50 @@
+## this skill does something. asdf
+skill2:
+  Cooldown: -234
+  OnCooldownSkill: skill2
+  Skills:
+  - skill{s=[
+    - skill{s=[
+      - message{m=1} @target <#>afslkjalsfkj
+      ]} @target <#>afslkjalsfkj
+    - skill{s=skill2} <#>afslkjalsfkj
+    ]}
+  - skill{s=[]}
+  - switch{c=
+      case SKELETON=[
+        - message{m="A SKELETON JUST HIT ME"} @Server <#>afslkjalsfkj
+        ]
+      case HUSK=[
+        - message{m="A HUSK JUST HIT ME!"} @Server
+        ]
+      case PIG=[
+        - message{m="NOOO A PIG"} @Server
+        ]
+      case default=[
+        - message{m="SOMEONE or SOMETHING HIT ME OUT OF NOWHEREE!!"} @Server
+        ]
+      case x=skill2
+    } @self
+  - randomskill{s=[ - message{m="something here"} ] 5,
+                            [ - message{m=something else} ] 2,
+                          [ - message{m=something else} ] 245.23234,
+            [ - message{m=something else} - randomskill{s=[ - message{m="something here"} ] 5,
+                                                                [ - message{m=something else} ] 2,
+                                                                          [ - message{m=something else} ] 245.23234,
+                                                          [ - message{m=something else} ] 2,
+                                                                    [ - message{m=something else} ] 2,
+                                                              [ - message{m=something else} ] 2, } @self ] 2,
+                  [   - switch{c=
+                              case SKELETON=[
+                                - message{m="A SKELETON JUST HIT ME"} @Server
+                                ]
+                                                    case HUSK=[
+                                                            - message{m="A HUSK JUST HIT ME!"} @Server
+                                                      ]
+                              case PIG=[
+                                    - message{m="NOOO A PIG"} @Server
+                                ]
+                              case DEFAULT=[
+                                - message{m="SOMEONE or SOMETHING HIT ME OUT OF NOWHEREE!!"} @Server
+                                ]
+                              case x=skill2} ] 2, } @self

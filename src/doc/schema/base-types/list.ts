@@ -38,7 +38,7 @@ export class SchemaList extends Schema {
             return result.toMerged(new ValidationResult([
                 {
                     ...DIAGNOSTIC_DEFAULT,
-                    message: `Expected ${this.toString(ws, doc, value)}.`,
+                    message: `Expected \`${this.toString(ws, doc, value)}\`.`,
                     range: doc.convertToRange(value.range),
                 },
             ]));

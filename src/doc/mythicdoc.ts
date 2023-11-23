@@ -9,8 +9,9 @@ import type { Position, Range } from "vscode-languageserver";
 import type { TextDocument } from "vscode-languageserver-textdocument";
 import type { ParsedNode, Range as YamlRange } from "yaml";
 import type { Workspace } from "../index.js";
-import type { Schema, ValidationResult } from "./schema/schema.js";
+import type { Schema } from "./schema/schema.js";
 
+import { ValidationResult } from "./schema/schema.js";
 import { findSchema } from "./schema/pathmap.js";
 
 /**
@@ -23,7 +24,7 @@ export class MythicDoc {
      */
     protected readonly lineLengths: number[];
 
-    public cachedValidationResult?: ValidationResult;
+    public cachedValidationResult?: ValidationResult | undefined;
 
     /**
      * A set of URIs of documents that this document depends on.
@@ -84,7 +85,7 @@ export class MythicDoc {
      */
     public convertToRange(range: YamlRange): Range {
         const start = this.convertToPosition(range[0]);
-        const end = this.convertToPosition(range[2]);
+        const end = this.convertToPosition(range[1]);
         return { start, end };
     }
 
@@ -139,10 +140,10 @@ export class MythicDoc {
     /**
      * Parses the document into a YAML AST.
      */
-    public parse(): ParsedNode {
+    public parse(): ParsedNode | null {
         return parseDocument(this.source, {
             keepSourceTokens: true,
-        }).contents!;
+        }).contents;
     }
 
     /**
@@ -153,10 +154,42 @@ export class MythicDoc {
      * @param workspace The workspace to validate the document in.
      */
     public partialProcess(workspace: Workspace): ValidationResult | undefined {
-        const res = this.schema?.partialProcess(workspace, this, this.parse());
+        workspace.logger?.debug(`[PROCESS] Partial, ${this.uri.toString()}`);
+        this.cachedValidationResult = new ValidationResult();
+        const yaml = this.parse();
+        if (!yaml) {
+            return undefined;
+        }
+        const res = this.schema?.partialProcess(workspace, this, yaml);
         if (res) {
             this.cachedValidationResult = res;
         }
         return res;
+    }
+
+    /**
+     * Fully processes the document against its schema.
+     *
+     * **Note:** This method mutates the document by caching the result of the validation.
+     *
+     * @param workspace The workspace to validate the document in.
+     */
+    public fullProcess(workspace: Workspace): ValidationResult | undefined {
+        workspace.logger?.debug(`[PROCESS] Full, ${this.uri.toString()}`);
+        this.cachedValidationResult = undefined;
+        const yaml = this.parse();
+        if (!yaml) {
+            return undefined;
+        }
+        const partialResult = this.schema?.partialProcess(workspace, this, yaml);
+        if (partialResult) {
+            this.cachedValidationResult = partialResult;
+        }
+        const fullResult = this.schema?.fullProcess(workspace, this, yaml);
+        if (fullResult) {
+            this.cachedValidationResult?.merge(fullResult);
+        }
+        workspace.logger?.debug(this.cachedValidationResult?.toString());
+        return this.cachedValidationResult;
     }
 }

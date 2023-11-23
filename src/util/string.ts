@@ -1,8 +1,10 @@
 import levenshtein from "js-levenshtein";
 
+import type { Range } from "vscode-languageserver";
+
 const DEFAULT_MAX_DISTANCE = 3;
 
-export function closest(
+function closest(
     str: string,
     matches: string[],
     maxDistance: number = DEFAULT_MAX_DISTANCE,
@@ -18,3 +20,9 @@ export function closest(
     }
     return bestDistance <= maxDistance ? bestMatch : undefined;
 }
+
+function stringifyRange(range: Range): string {
+    return `${range.start.line}:${range.start.character}-${range.end.line}:${range.end.character}`;
+}
+
+export { closest, stringifyRange };

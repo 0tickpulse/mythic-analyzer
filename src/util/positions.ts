@@ -1,12 +1,16 @@
 import type { Position, Range } from "vscode-languageserver";
 
 function posIsIn(pos: Position, range: Range) {
-    return (
-        pos.line >= range.start.line
-        && pos.line <= range.end.line
-        && pos.character >= range.start.character
-        && pos.character <= range.end.character
-    );
+    if (pos.line < range.start.line || pos.line > range.end.line) {
+        return false;
+    }
+    if (pos.line === range.start.line && pos.character < range.start.character) {
+        return false;
+    }
+    if (pos.line === range.end.line && pos.character > range.end.character) {
+        return false;
+    }
+    return true;
 }
 
 function posCmp(a: Position, b: Position) {

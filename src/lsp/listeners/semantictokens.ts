@@ -47,6 +47,9 @@ export function semanticTokenHandler(workspace: Workspace) {
             lastChar = highlight.range.start.character;
         }
 
+        workspace.logger?.log(
+            `[RESPONSE] Semantic Tokens, ${textDocument.uri}, ${highlights.length} highlights.`,
+        );
         return { data: tokens };
     };
 }

@@ -7,6 +7,7 @@ import type { ValidationResult } from "../schema.js";
 
 import { DIAGNOSTIC_DEFAULT } from "../../../errors.js";
 import { Schema } from "../schema.js";
+import { closest } from "../../../util/string.js";
 
 export class SchemaObject extends Schema {
     public constructor(
@@ -40,7 +41,7 @@ export class SchemaObject extends Schema {
         if (!isMap(value)) {
             result.diagnostics.push({
                 ...DIAGNOSTIC_DEFAULT,
-                message: `Expected ${this.toString(ws, doc, value)}.`,
+                message: `Expected \`${this.toString(ws, doc, value)}\`.`,
                 range: doc.convertToRange(value.range),
             });
             return result;
@@ -92,12 +93,33 @@ export class SchemaObject extends Schema {
         for (const pair of value.items) {
             const key = pair.key;
             if (!properties[key.toString()]) {
+                const closestValue = closest(key.toString(), Object.keys(properties));
+                let error = `Unexpected property ${key.toString()}.`;
+                if (closestValue) {
+                    error += ` Did you mean \`${closestValue}\`?`;
+                }
                 result.diagnostics.push({
                     ...DIAGNOSTIC_DEFAULT,
-                    message: `Unexpected property ${key.toString()}.`,
+                    message: error,
                     range: doc.convertToRange(key.range),
                 });
             }
+        }
+        return result;
+    }
+
+    public override fullProcess(ws: Workspace, doc: MythicDoc, value: ParsedNode): ValidationResult {
+        const result = super.fullProcess(ws, doc, value);
+        if (!isMap(value)) {
+            return result;
+        }
+        const properties = this.resolveValueOrFn(ws, doc, value, this.properties);
+        for (const [key, property] of Object.entries(properties)) {
+            const node = value.items.find((pair) => isScalar(pair.key) && pair.key.value === key)?.value;
+            if (!node) {
+                continue;
+            }
+            result.merge(property.schema.fullProcess(ws, doc, node));
         }
         return result;
     }
@@ -105,6 +127,9 @@ export class SchemaObject extends Schema {
 
 export type SchemaObjectProperty = {
     schema: Schema;
+    /**
+     * Defaults to false.
+     */
     required?: boolean | undefined;
     description?: string | undefined;
 };

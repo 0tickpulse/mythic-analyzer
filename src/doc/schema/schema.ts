@@ -1,9 +1,12 @@
-import type { DefinitionLink, Diagnostic, Hover } from "vscode-languageserver";
+import type { Diagnostic, Hover } from "vscode-languageserver";
 import type { ParsedNode } from "yaml";
-import type { MythicDoc } from "../mythicdoc.js";
-import type { Workspace } from "../../index.js";
 import type { MythicSkill } from "../../document-models/mythicskill.js";
+import type { Workspace } from "../../index.js";
 import type { Highlight } from "../../lsp/models/highlight.js";
+import type { MythicDoc } from "../mythicdoc.js";
+import type { RangeLink } from "../../lsp/models/rangeLink.js";
+
+import { stringifyRange } from "../../util/string.js";
 
 /**
  * The result after validating a value against a schema.
@@ -12,7 +15,7 @@ class ValidationResult {
     public constructor(
         public readonly diagnostics: Diagnostic[] = [],
         public readonly hovers: Required<Hover>[] = [],
-        public readonly definitionLinks: DefinitionLink[] = [],
+        public readonly rangeLinks: RangeLink[] = [],
         public readonly mythicSkills: MythicSkill[] = [],
         public readonly highlights: Highlight[] = [],
     ) {}
@@ -27,7 +30,7 @@ class ValidationResult {
         return new ValidationResult(
             [...this.diagnostics, ...other.diagnostics],
             [...this.hovers, ...other.hovers],
-            [...this.definitionLinks, ...other.definitionLinks],
+            [...this.rangeLinks, ...other.rangeLinks],
             [...this.mythicSkills, ...other.mythicSkills],
             [...this.highlights, ...other.highlights],
         );
@@ -42,9 +45,29 @@ class ValidationResult {
     public merge(other: ValidationResult): void {
         this.diagnostics.push(...other.diagnostics);
         this.hovers.push(...other.hovers);
-        this.definitionLinks.push(...other.definitionLinks);
+        this.rangeLinks.push(...other.rangeLinks);
         this.mythicSkills.push(...other.mythicSkills);
         this.highlights.push(...other.highlights);
+    }
+
+    public toString(): string {
+        return `ValidationResult {
+diagnostics: [
+    ${this.diagnostics.map((d) => stringifyRange(d.range)).join(",\n")}
+],
+hovers: [
+    ${this.hovers.map((h) => stringifyRange(h.range)).join(",\n")}
+],
+rangeLinks: [
+    ${this.rangeLinks.map((r) => stringifyRange(r.fromRange)).join(",\n")}
+],
+mythicSkills: [
+    ${this.mythicSkills.map((s) => String(s.declaration.range)).join(",\n")}
+],
+highlights: [
+    ${this.highlights.map((h) => stringifyRange(h.range)).join(",\n")}
+    ]
+}`;
     }
 }
 
