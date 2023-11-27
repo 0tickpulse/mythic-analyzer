@@ -26,6 +26,14 @@ export class MythicDataBuilder {
 
     public tickDuration = DEFAULT_TICK_DURATION;
 
+    public constructor(data?: MythicData) {
+        if (data) {
+            this.materialIds = data.materialIds;
+            this.entityIds = data.entityIds;
+            this.tickDuration = data.tickDuration;
+        }
+    }
+
     public addMaterialId(id: string): this {
         this.materialIds.add(id);
         return this;
