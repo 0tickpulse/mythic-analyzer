@@ -16,6 +16,9 @@ export type MythicData = {
     tickDuration: number;
 };
 
+/**
+ * A fluent-interface builder for MythicData.
+ */
 export class MythicDataBuilder {
     public readonly materialIds = MATERIALS;
 
