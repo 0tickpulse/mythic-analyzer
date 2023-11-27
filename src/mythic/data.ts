@@ -5,15 +5,15 @@ export type MythicData = {
     /**
      * All material IDs that are used in the workspace.
      */
-    materialIds: Set<string>;
+    readonly materialIds: Set<string>;
     /**
      * All entity IDs that are used in the workspace.
      */
-    entityIds: Set<string>;
+    readonly entityIds: Set<string>;
     /**
      * The duration of a singular tick in seconds.
      */
-    tickDuration: number;
+    readonly tickDuration: number;
 };
 
 /**
