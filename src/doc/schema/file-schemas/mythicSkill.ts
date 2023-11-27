@@ -33,10 +33,10 @@ export const MYTHIC_SKILL_SCHEMA = new SchemaMap(
                     }
 
                     const num = v.toJSON() as number;
-                    if (num % 0.05 !== 0) {
+                    if (num % ws.mythicData.tickDuration !== 0) {
                         result.diagnostics.push({
                             ...DIAGNOSTIC_DEFAULT,
-                            message: `Cooldown should be divisible by 0.05 (1 tick).`,
+                            message: `Cooldown should be divisible by ${ws.mythicData.tickDuration} (1 tick).`,
                             range: doc.convertToRange(v.range),
                         });
                     }

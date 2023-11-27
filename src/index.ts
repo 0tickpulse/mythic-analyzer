@@ -16,6 +16,7 @@ import { hoverHandler } from "./lsp/listeners/hover.js";
 import { recursiveReadDir } from "./util/files.js";
 import { semanticTokenHandler } from "./lsp/listeners/semantictokens.js";
 import { ValidationResult } from "./doc";
+import { MythicDataBuilder } from "./mythic/data.js";
 
 async function main() {
     process.stdout.write("== MYTHIC ANALYZER CLI ==\n");
@@ -71,6 +72,8 @@ class Workspace {
     public readonly partialParseQueue = new Set<MythicDoc>();
 
     public readonly fullParseQueue = new Set<MythicDoc>();
+
+    public readonly mythicData = new MythicDataBuilder().build();
 
     /**
      * Range links are links between ranges in documents.

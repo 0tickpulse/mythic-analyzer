@@ -1,0 +1,1 @@
+export const DEFAULT_TICK_DURATION = 0.05;
