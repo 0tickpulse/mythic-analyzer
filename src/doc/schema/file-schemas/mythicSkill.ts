@@ -12,9 +12,16 @@ import { SchemaObject } from "../base-types/object.js";
 import { SchemaString } from "../base-types/string.js";
 import { SCHEMA_MYTHIC_SKILL_ID } from "../utility-types/mythicSkillId.js";
 import { DIAGNOSTIC_DEFAULT } from "../../../errors.js";
+import { SchemaBool } from "../base-types/bool.js";
 
 export const MYTHIC_SKILL_SCHEMA = new SchemaMap(
     new SchemaObject({
+        CancelIfNoTargets: {
+            schema: new SchemaBool(),
+            description:
+                "Whether to cancel the skill if there are no targets."
+                + mdSeeAlso("Skills/Metaskills#cancelifnotargets"),
+        },
         OnCooldownSkill: {
             schema: SCHEMA_MYTHIC_SKILL_ID,
             description:
@@ -53,6 +60,27 @@ export const MYTHIC_SKILL_SCHEMA = new SchemaMap(
             description:
                 "The skills that this skill will use."
                 + mdSeeAlso("Skills/Metaskills#skills"),
+        },
+        Conditions: {
+            schema: new SchemaList(new SchemaString()),
+            required: false,
+            description:
+                "The conditions that this skill will check on the **caster**."
+                + mdSeeAlso("Skills/Metaskills#conditions"),
+        },
+        TargetConditions: {
+            schema: new SchemaList(new SchemaString()),
+            required: false,
+            description:
+                "The conditions that this skill will check on the **target**."
+                + mdSeeAlso("Skills/Metaskills#targetconditions"),
+        },
+        TriggerConditions: {
+            schema: new SchemaList(new SchemaString()),
+            required: false,
+            description:
+                "The conditions that this skill will check on the **trigger**."
+                + mdSeeAlso("Skills/Metaskills#triggerconditions"),
         },
     }).withName("mythic_skill_config"),
     (ws, doc, { commentBefore }, v) => {
