@@ -1,5 +1,6 @@
 import { SemanticTokenTypes } from "vscode-languageserver";
 import { isMap, isScalar } from "yaml";
+import Decimal from "decimal.js";
 
 import { MythicSkill } from "../../../document-models/mythicskill.js";
 import { Highlight } from "../../../lsp/models/highlight.js";
@@ -13,7 +14,6 @@ import { SchemaString } from "../base-types/string.js";
 import { SCHEMA_MYTHIC_SKILL_ID } from "../utility-types/mythicSkillId.js";
 import { DIAGNOSTIC_DEFAULT } from "../../../errors.js";
 import { SchemaBool } from "../base-types/bool.js";
-import Decimal from "decimal.js";
 
 export const MYTHIC_SKILL_SCHEMA = new SchemaMap(
     new SchemaObject({
