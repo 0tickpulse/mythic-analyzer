@@ -35,6 +35,7 @@
   "type": "module",
   "dependencies": {
     "@marionebl/result": "^1.0.8",
+    "decimal.js": "^10.4.3",
     "js-levenshtein": "^1.1.6",
     "picomatch": "^2.3.1",
     "vscode-languageserver": "^9.0.1",

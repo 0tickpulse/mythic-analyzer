@@ -13,6 +13,7 @@ import { SchemaString } from "../base-types/string.js";
 import { SCHEMA_MYTHIC_SKILL_ID } from "../utility-types/mythicSkillId.js";
 import { DIAGNOSTIC_DEFAULT } from "../../../errors.js";
 import { SchemaBool } from "../base-types/bool.js";
+import Decimal from "decimal.js";
 
 export const MYTHIC_SKILL_SCHEMA = new SchemaMap(
     new SchemaObject({
@@ -41,10 +42,19 @@ export const MYTHIC_SKILL_SCHEMA = new SchemaMap(
                         return;
                     }
 
-                    if (num % ws.mythicData.tickDuration !== 0) {
+                    const numDecimal = new Decimal(num);
+                    const tickDurationDecimal = new Decimal(
+                        ws.mythicData.tickDuration,
+                    );
+
+                    if (
+                        !numDecimal.modulo(tickDurationDecimal).isZero()
+                    ) {
                         result.diagnostics.push({
                             ...DIAGNOSTIC_DEFAULT,
-                            message: `Cooldown should be divisible by ${ws.mythicData.tickDuration} (1 tick).`,
+                            message: `Cooldown should be divisible by ${
+                                ws.mythicData.tickDuration
+                            } (1 tick). Found mod = ${num % ws.mythicData.tickDuration}.`,
                             range: doc.convertToRange(v.range),
                         });
                     }
