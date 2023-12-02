@@ -47,14 +47,10 @@ export const MYTHIC_SKILL_SCHEMA = new SchemaMap(
                         ws.mythicData.tickDuration,
                     );
 
-                    if (
-                        !numDecimal.modulo(tickDurationDecimal).isZero()
-                    ) {
+                    if (!numDecimal.modulo(tickDurationDecimal).isZero()) {
                         result.diagnostics.push({
                             ...DIAGNOSTIC_DEFAULT,
-                            message: `Cooldown should be divisible by ${
-                                ws.mythicData.tickDuration
-                            } (1 tick). Found mod = ${num % ws.mythicData.tickDuration}.`,
+                            message: `Cooldown should be divisible by ${ws.mythicData.tickDuration} (1 tick).`,
                             range: doc.convertToRange(v.range),
                         });
                     }
