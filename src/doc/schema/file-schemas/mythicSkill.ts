@@ -35,11 +35,12 @@ export const MYTHIC_SKILL_SCHEMA = new SchemaMap(
                         return;
                     }
 
-                    if (typeof v.toJSON() !== "number") {
+                    const num = v.toJSON() as unknown;
+
+                    if (typeof num !== "number") {
                         return;
                     }
 
-                    const num = v.toJSON() as number;
                     if (num % ws.mythicData.tickDuration !== 0) {
                         result.diagnostics.push({
                             ...DIAGNOSTIC_DEFAULT,
