@@ -31,7 +31,7 @@ export class SchemaMap extends SchemaObject {
             const keyStrings = keyScalars.map((key) => key.toString());
             const v: Record<string, SchemaObjectProperty> = {};
             keyStrings.forEach((keyString, i) => {
-                v[keyString] = {
+                v[keyString.split(".")[0] ?? keyString] = {
                     schema: this.resolveValueOrFn(ws, doc, value, this.value),
                     description: this.description?.(
                         ws,

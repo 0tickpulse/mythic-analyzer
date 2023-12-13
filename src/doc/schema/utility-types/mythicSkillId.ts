@@ -4,15 +4,14 @@ import { isScalar } from "yaml";
 import { SchemaString } from "../base-types/string.js";
 import { RangeLink } from "../../../lsp/models/rangeLink.js";
 
-export const SCHEMA_MYTHIC_SKILL_ID = new SchemaString().onFullProcess(
-    (ws, doc, value, result) => {
+export const SCHEMA_MYTHIC_SKILL_ID = new SchemaString()
+    .withName("mythic_skill_id")
+    .onFullProcess((ws, doc, value, result) => {
         const skills = ws.mergedValidationResult().mythicSkills;
         const skillNames = skills.map((skill) => skill.id);
         const schema = new SchemaString(skillNames);
         schema.highlight = SemanticTokenTypes.function;
-        const newResult = schema
-            .withName("mythic_skill_id")
-            .partialProcess(ws, doc, value);
+        const newResult = schema.partialProcess(ws, doc, value);
         if (newResult.diagnostics.length === 0 && isScalar(value)) {
             const originalSkill = skills.find(
                 (skill) => skill.id === value.value,
@@ -37,5 +36,4 @@ export const SCHEMA_MYTHIC_SKILL_ID = new SchemaString().onFullProcess(
             });
         }
         result.merge(newResult);
-    },
-);
+    });

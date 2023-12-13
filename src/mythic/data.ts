@@ -1,3 +1,4 @@
+import { ENTITIES } from "./defaultData/entities.js";
 import { MATERIALS } from "./defaultData/materials.js";
 import { DEFAULT_TICK_DURATION } from "./defaultData/tick.js";
 
@@ -22,7 +23,7 @@ export type MythicData = {
 export class MythicDataBuilder {
     public readonly materialIds = MATERIALS;
 
-    public readonly entityIds = new Set<string>();
+    public readonly entityIds = ENTITIES;
 
     public tickDuration = DEFAULT_TICK_DURATION;
 

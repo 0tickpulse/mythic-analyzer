@@ -1,19 +1,18 @@
-import { SemanticTokenTypes } from "vscode-languageserver";
-import { isMap, isScalar } from "yaml";
 import Decimal from "decimal.js";
+import { isScalar } from "yaml";
 
 import { MythicSkill } from "../../../document-models/mythicskill.js";
-import { Highlight } from "../../../lsp/models/highlight.js";
+import { DIAGNOSTIC_DEFAULT } from "../../../errors.js";
 import { parseDocumentation } from "../../../util/documentationparser.js";
 import { mdSeeAlso } from "../../../util/markdown.js";
+import { SchemaBool } from "../base-types/bool.js";
 import { SchemaList } from "../base-types/list.js";
 import { SchemaMap } from "../base-types/map.js";
 import { SchemaNumber } from "../base-types/number.js";
 import { SchemaObject } from "../base-types/object.js";
 import { SchemaString } from "../base-types/string.js";
 import { SCHEMA_MYTHIC_SKILL_ID } from "../utility-types/mythicSkillId.js";
-import { DIAGNOSTIC_DEFAULT } from "../../../errors.js";
-import { SchemaBool } from "../base-types/bool.js";
+import { component } from "../utils/component.js";
 
 export const MYTHIC_SKILL_SCHEMA = new SchemaMap(
     new SchemaObject({
@@ -99,25 +98,4 @@ export const MYTHIC_SKILL_SCHEMA = new SchemaMap(
         documentation += mdSeeAlso("Skills/Metaskills");
         return documentation;
     },
-).onPartialProcess((ws, doc, value, result) => {
-    if (!isMap(value)) {
-        return;
-    }
-    const keys = value.items.map((pair) => pair.key);
-    for (const key of keys) {
-        const id = key.toString();
-        const range = doc.convertToRange(key.range);
-        const color = SemanticTokenTypes.function;
-        result.highlights.push(new Highlight(range, color));
-
-        const mythicskill = new MythicSkill(doc, id, value);
-
-        const comment = key.commentBefore;
-        if (comment) {
-            const contents = parseDocumentation(comment);
-            mythicskill.documentation = contents;
-        }
-
-        result.mythicSkills.push(mythicskill);
-    }
-});
+).onPartialProcess(component(MythicSkill));
