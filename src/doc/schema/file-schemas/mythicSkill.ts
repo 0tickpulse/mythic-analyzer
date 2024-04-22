@@ -1,4 +1,5 @@
 import Decimal from "decimal.js";
+import { SemanticTokenTypes } from "vscode-languageserver";
 import { isScalar } from "yaml";
 
 import { MythicSkill } from "../../../document-models/mythicskill.js";
@@ -98,4 +99,4 @@ export const MYTHIC_SKILL_SCHEMA = new SchemaMap(
         documentation += mdSeeAlso("Skills/Metaskills");
         return documentation;
     },
-).onPartialProcess(component(MythicSkill));
+).onPartialProcess(component(MythicSkill, "skills", SemanticTokenTypes.function));

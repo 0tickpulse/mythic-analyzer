@@ -34,6 +34,14 @@ class SchemaObject extends Schema {
         super();
     }
 
+    /**
+     * Resolves and returns a record of submapped properties for the given workspace, document, and value.
+     *
+     * @param ws - The workspace.
+     * @param doc - The document.
+     * @param value - The parsed node value.
+     * @returns A record of submapped properties.
+     */
     private submapped(
         ws: Workspace,
         doc: MythicDoc,
@@ -127,7 +135,7 @@ class SchemaObject extends Schema {
                 (pair) => isScalar(pair.key) && pair.key.value === key,
             );
             if (!pair) {
-                if (property.required) {
+                if (property.required && key.split(".").length === 1) { // only check for top-level properties
                     result.diagnostics.push({
                         ...DIAGNOSTIC_DEFAULT,
                         message: `Missing required property ${key}.`,
@@ -164,15 +172,15 @@ class SchemaObject extends Schema {
                 contents: hover,
             });
 
-            result.merge(
-                this.resolveObjectValueOrFn(
-                    ws,
-                    doc,
-                    pair.key,
-                    value,
-                    property.schema,
-                ).partialProcess(ws, doc, pair.value),
-            );
+            const valueResult = this.resolveObjectValueOrFn(
+                ws,
+                doc,
+                pair.key,
+                value,
+                property.schema,
+            ).partialProcess(ws, doc, pair.value);
+
+            result.merge(valueResult);
         }
         for (const pair of value.items) {
             const key = pair.key;

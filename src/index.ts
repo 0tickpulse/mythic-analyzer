@@ -2,7 +2,9 @@ import {
     TextDocuments,
     SemanticTokenTypes,
     SemanticTokenModifiers,
-} from "vscode-languageserver";
+    createConnection,
+    ProposedFeatures,
+} from "vscode-languageserver/node";
 import { TextDocument } from "vscode-languageserver-textdocument";
 
 import type { Connection } from "vscode-languageserver";
@@ -19,42 +21,52 @@ import { ValidationResult } from "./doc";
 import { MythicDataBuilder } from "./mythic/data.js";
 
 async function main() {
-    process.stdout.write("== MYTHIC ANALYZER CLI ==\n");
     // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- I'm just using this to get the arguments.
     const args = process.argv.slice(2);
-    const folder = args[0];
-    if (!folder) {
-        process.stderr.write("Usage: mythic <folder>\n");
-        throw new Error("No folder specified");
-    }
-    process.stdout.write(`Analyzing ${folder}...\n`);
-    const workspace = new Workspace();
-    workspace.logger = STDOUT_LOGGER;
 
-    // read all files in the folder
-    await workspace.loadFolder(folder);
-
-    for (const doc of workspace.docs.values()) {
-        workspace.logger.log(`== ${doc.uri.toString()}`);
-        doc.partialProcess(workspace);
-        const result = doc.fullProcess(workspace);
-        if (!result) {
-            workspace.logger.log("⚠️ No validation result.");
-            continue;
+    const mode = args[0];
+    if (mode === "lsp") {
+        const workspace = new Workspace();
+        if (!process.stdin.isTTY && !args.includes("--no-logger")) {
+            workspace.logger = STDOUT_LOGGER;
         }
-        workspace.logger.log(result);
-        // const diagnostics = result.diagnostics;
-        // for (const diagnostic of diagnostics) {
-        //     const range = diagnostic.range;
-        //     const message = diagnostic.message;
-        //     const start = range.start;
-        //     const end = range.end;
-        //     const line = start.line;
-        //     const character = start.character;
-        //     const endLine = end.line;
-        //     const endCharacter = end.character;
-        //     process.stdout.write(`${line}:${character}-${endLine}:${endCharacter} ${message}\n`);
-        // }
+        workspace.createLSP(createConnection(ProposedFeatures.all));
+    } else if (mode === "cli") {
+        process.stdout.write("== MYTHIC ANALYZER CLI ==\n");
+        const folder = args[1];
+        if (!folder) {
+            process.stderr.write("Usage: mythic cli <folder>\n");
+            throw new Error("No folder specified");
+        }
+        process.stdout.write(`Analyzing ${folder}...\n`);
+        const workspace = new Workspace();
+        workspace.logger = STDOUT_LOGGER;
+
+        // read all files in the folder
+        await workspace.loadFolder(folder);
+
+        for (const doc of workspace.docs.values()) {
+            workspace.logger.log(`== ${doc.uri.toString()}`);
+            doc.partialProcess(workspace);
+            const result = doc.fullProcess(workspace);
+            if (!result) {
+                workspace.logger.log("⚠️ No validation result.");
+                continue;
+            }
+            workspace.logger.log(result);
+            // const diagnostics = result.diagnostics;
+            // for (const diagnostic of diagnostics) {
+            //     const range = diagnostic.range;
+            //     const message = diagnostic.message;
+            //     const start = range.start;
+            //     const end = range.end;
+            //     const line = start.line;
+            //     const character = start.character;
+            //     const endLine = end.line;
+            //     const endCharacter = end.character;
+            //     process.stdout.write(`${line}:${character}-${endLine}:${endCharacter} ${message}\n`);
+            // }
+        }
     }
 }
 
@@ -219,7 +231,9 @@ class Workspace {
                     );
                 });
             const doc = MythicDoc.fromTextDocument(change.document);
-            this.logger?.log(`Loaded document ${doc.uri.toString()} after change.`);
+            this.logger?.log(
+                `Loaded document ${doc.uri.toString()} after change.`,
+            );
             this.load(doc);
             const result = doc.fullProcess(this);
             const diags = result?.diagnostics;

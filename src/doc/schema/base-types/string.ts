@@ -10,6 +10,7 @@ import { DIAGNOSTIC_DEFAULT } from "../../../errors.js";
 import { Schema, ValidationResult } from "../schema.js";
 import { closest } from "../../../util/string.js";
 import { Highlight } from "../../../lsp/models/highlight.js";
+import { isIterable } from "../../../util/types.js";
 
 export class SchemaString extends Schema {
     /**
@@ -18,7 +19,7 @@ export class SchemaString extends Schema {
     public highlight?: SemanticTokenTypes;
 
     public constructor(
-        public readonly matcher?: SchemaValueOrFn<string | RegExp | string[]>,
+        public readonly matcher?: SchemaValueOrFn<string | RegExp | Iterable<string>>,
         public readonly caseSensitive: SchemaValueOrFn<boolean> = false,
     ) {
         super();
@@ -52,7 +53,7 @@ export class SchemaString extends Schema {
         }
         const matcher = this.resolveValueOrFn(ws, doc, value, this.matcher);
         const cs = this.resolveValueOrFn(ws, doc, value, this.caseSensitive);
-        const string = value.toJSON() as string;
+        const string = value.value as string;
         if (matcher instanceof RegExp) {
             if (!matcher.test(string)) {
                 result.diagnostics.push({
@@ -62,9 +63,10 @@ export class SchemaString extends Schema {
                 });
                 return result;
             }
-        } else if (Array.isArray(matcher)) {
-            if (!matcher.includes(string)) {
-                const closestValue = closest(string, matcher);
+        } else if (isIterable(matcher) && typeof matcher !== "string") {
+            const arr = Array.from(matcher);
+            if (!this.#includes(arr, string, cs)) {
+                const closestValue = this.#closest(arr, string, cs);
                 let error = `Expected \`${this.toString(ws, doc, value)}\`, but got ${string}.`;
                 if (closestValue !== undefined) {
                     error += ` Did you mean ${closestValue}?`;
@@ -87,7 +89,7 @@ export class SchemaString extends Schema {
             }
         }
         if (this.highlight) {
-            result.highlights.push(new Highlight(range, this.highlight));
+            result.highlights.unshift(new Highlight(range, this.highlight));
         }
         return result;
     }
@@ -97,5 +99,19 @@ export class SchemaString extends Schema {
             return a === b;
         }
         return a.toLowerCase() === b.toLowerCase();
+    }
+
+    #includes(arr: string[], str: string, cs: boolean): boolean {
+        if (cs) {
+            return arr.includes(str);
+        }
+        return arr.some((s) => s.toLowerCase() === str.toLowerCase());
+    }
+
+    #closest(arr: string[], str: string, cs: boolean): string | undefined {
+        if (cs) {
+            return closest(str, arr);
+        }
+        return closest(str.toLowerCase(), arr.map((s) => s.toLowerCase()));
     }
 }

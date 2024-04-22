@@ -1,12 +1,12 @@
+import type { Range } from "vscode-languageserver-textdocument";
 import type { Diagnostic, Hover } from "vscode-languageserver";
 import type { ParsedNode } from "yaml";
 import type { MythicSkill } from "../../document-models/mythicskill.js";
 import type { Workspace } from "../../index.js";
 import type { Highlight } from "../../lsp/models/highlight.js";
-import type { MythicDoc } from "../mythicdoc.js";
 import type { RangeLink } from "../../lsp/models/rangeLink.js";
-
-import { stringifyRange } from "../../util/string.js";
+import type { MythicDoc } from "../mythicdoc.js";
+import type { MythicMob } from "../../document-models/mythicmob.js";
 
 /**
  * The result after validating a value against a schema.
@@ -16,7 +16,13 @@ class ValidationResult {
         public readonly diagnostics: Diagnostic[] = [],
         public readonly hovers: Required<Hover>[] = [],
         public readonly rangeLinks: RangeLink[] = [],
-        public readonly mythicSkills: MythicSkill[] = [],
+        public readonly mythic: {
+            skills: MythicSkill[];
+            mobs: MythicMob[];
+        } = {
+            skills: [],
+            mobs: [],
+        },
         public readonly highlights: Highlight[] = [],
     ) {}
 
@@ -31,7 +37,10 @@ class ValidationResult {
             [...this.diagnostics, ...other.diagnostics],
             [...this.hovers, ...other.hovers],
             [...this.rangeLinks, ...other.rangeLinks],
-            [...this.mythicSkills, ...other.mythicSkills],
+            {
+                skills: [...this.mythic.skills, ...other.mythic.skills],
+                mobs: [...this.mythic.mobs, ...other.mythic.mobs],
+            },
             [...this.highlights, ...other.highlights],
         );
     }
@@ -46,28 +55,24 @@ class ValidationResult {
         this.diagnostics.push(...other.diagnostics);
         this.hovers.push(...other.hovers);
         this.rangeLinks.push(...other.rangeLinks);
-        this.mythicSkills.push(...other.mythicSkills);
-        this.highlights.push(...other.highlights);
+        this.mythic.skills.push(...other.mythic.skills);
+        this.mythic.mobs.push(...other.mythic.mobs);
+        this.highlights.unshift(...other.highlights);
     }
 
-    public toString(): string {
-        return `ValidationResult {
-diagnostics: [
-    ${this.diagnostics.map((d) => stringifyRange(d.range)).join(",\n")}
-],
-hovers: [
-    ${this.hovers.map((h) => stringifyRange(h.range)).join(",\n")}
-],
-rangeLinks: [
-    ${this.rangeLinks.map((r) => stringifyRange(r.fromRange)).join(",\n")}
-],
-mythicSkills: [
-    ${this.mythicSkills.map((s) => String(s.declaration.range)).join(",\n")}
-],
-highlights: [
-    ${this.highlights.map((h) => stringifyRange(h.range)).join(",\n")}
-    ]
-}`;
+    public transformRanges(transformer: (range: Range) => Range): void {
+        this.diagnostics.forEach((d) => {
+            d.range = transformer(d.range);
+        });
+        this.hovers.forEach((h) => {
+            h.range = transformer(h.range);
+        });
+        this.rangeLinks.forEach((r) => {
+            r.fromRange = transformer(r.fromRange);
+        });
+        this.highlights.forEach((h) => {
+            h.range = transformer(h.range);
+        });
     }
 }
 

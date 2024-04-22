@@ -12,7 +12,8 @@ import type { Workspace } from "../index.js";
 import type { Schema } from "./schema/schema.js";
 
 import { ValidationResult } from "./schema/schema.js";
-import { findSchema } from "./schema/pathmap.js";
+import { findSchema, matchSchemaID } from "./schema/pathmap.js";
+import { DocMetadata } from "./docmetadata.js";
 
 /**
  * Represents a document in the Mythic system.
@@ -25,6 +26,8 @@ export class MythicDoc {
     protected readonly lineLengths: number[];
 
     public cachedValidationResult?: ValidationResult | undefined;
+
+    public metadata: DocMetadata = {};
 
     /**
      * A set of URIs of documents that this document depends on.
@@ -146,6 +149,30 @@ export class MythicDoc {
         }).contents;
     }
 
+    public updateMetadata(workspace: Workspace): ValidationResult {
+        // a metadata line starts with ## and must be on the top of the document
+        // scan from top until we find a non-metadata line
+        const lines = this.source.split("\n");
+        let metadataString = "";
+        for (const line of lines) {
+            if (!line.startsWith("##")) {
+                break;
+            }
+            // eslint-disable-next-line @typescript-eslint/no-magic-numbers
+            metadataString += "  " + line.slice(2) + "\n";
+        }
+        workspace.logger?.debug(`[METADATA] ${metadataString}`);
+        const parsed = DocMetadata.parse(workspace, this, metadataString);
+        this.metadata = parsed.metadata;
+        workspace.logger?.debug({ parsed });
+
+        if (this.metadata.fileType) {
+            this.schema = matchSchemaID(this.metadata.fileType);
+        }
+
+        return parsed.result;
+    }
+
     /**
      * Partially processes the document against its schema.
      *
@@ -156,6 +183,8 @@ export class MythicDoc {
     public partialProcess(workspace: Workspace): ValidationResult | undefined {
         workspace.logger?.debug(`[PROCESS] Partial, ${this.uri.toString()}`);
         this.cachedValidationResult = new ValidationResult();
+        const metadataResult = this.updateMetadata(workspace);
+        this.cachedValidationResult.merge(metadataResult);
         const yaml = this.parse();
         if (!yaml) {
             return undefined;
@@ -176,20 +205,21 @@ export class MythicDoc {
      */
     public fullProcess(workspace: Workspace): ValidationResult | undefined {
         workspace.logger?.debug(`[PROCESS] Full, ${this.uri.toString()}`);
-        this.cachedValidationResult = undefined;
+        this.cachedValidationResult = new ValidationResult();
+        const metadataResult = this.updateMetadata(workspace);
+        this.cachedValidationResult.merge(metadataResult);
         const yaml = this.parse();
         if (!yaml) {
             return undefined;
         }
         const partialResult = this.schema?.partialProcess(workspace, this, yaml);
         if (partialResult) {
-            this.cachedValidationResult = partialResult;
+            this.cachedValidationResult.merge(partialResult);
         }
         const fullResult = this.schema?.fullProcess(workspace, this, yaml);
         if (fullResult) {
-            this.cachedValidationResult?.merge(fullResult);
+            this.cachedValidationResult.merge(fullResult);
         }
-        workspace.logger?.debug(this.cachedValidationResult?.toString());
         return this.cachedValidationResult;
     }
 }

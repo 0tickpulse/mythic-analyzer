@@ -58,9 +58,19 @@
             "error",
             75
         ],
+        "max-len": [
+            "error",
+            300
+        ],
         "max-lines": [
             "error",
             300
+        ],
+        "no-param-reassign": [
+            "error",
+            {
+                "props": false
+            }
         ]
     }
 }
