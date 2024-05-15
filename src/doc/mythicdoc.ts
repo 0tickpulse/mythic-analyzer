@@ -168,6 +168,7 @@ export class MythicDoc {
 
         if (this.metadata.fileType) {
             this.schema = matchSchemaID(this.metadata.fileType);
+            workspace.logger?.debug(`[SCHEMA] Overriding schema to ${this.metadata.fileType} for ${this.uri.toString()}`);
         }
 
         return parsed.result;
