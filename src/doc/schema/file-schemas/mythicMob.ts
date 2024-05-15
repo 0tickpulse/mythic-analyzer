@@ -1,20 +1,22 @@
 import { SemanticTokenTypes } from "vscode-languageserver";
 import { isMap, isScalar } from "yaml";
 
+import { MythicMob } from "../../../document-models/mythicmob.js";
 import { DIAGNOSTIC_DEFAULT } from "../../../errors.js";
+import { mdLinkWiki, mdSeeAlso } from "../../../util/markdown.js";
+import { includesIgnoreCase } from "../../../util/string.js";
+import { SchemaBool } from "../base-types/bool.js";
+import { SchemaList } from "../base-types/list.js";
 import { SchemaMap } from "../base-types/map.js";
 import { SchemaNumber } from "../base-types/number.js";
 import { SchemaObject } from "../base-types/object.js";
 import { SchemaString } from "../base-types/string.js";
 import { SCHEMA_ENTITY_TYPE } from "../utility-types/entityType.js";
-import { component } from "../utils/component.js";
-import { mdLinkWiki, mdSeeAlso } from "../../../util/markdown.js";
-import { MythicMob } from "../../../document-models/mythicmob.js";
-import { SchemaBool } from "../base-types/bool.js";
 import { SCHEMA_MYTHIC_MOB_ID } from "../utility-types/mythicMobId.js";
+import { component } from "../utils/component.js";
 
 export const MYTHIC_MOB_SCHEMA = new SchemaMap(
-    new SchemaObject({
+    new SchemaObject((ws, doc, value) => ({
         Type: {
             schema: SCHEMA_ENTITY_TYPE,
             description: `The base entity type of the mythic mob.
@@ -134,7 +136,11 @@ ${mdSeeAlso("Mobs/Mobs#bossbar")}`,
         },
         Faction: {
             schema: new SchemaString(),
-            description: `Sets the mob's faction, which can be used for advanced [Custom AI](${mdLinkWiki("Mobs/Custom-AI")}) configurations or [targeter filtering](${mdLinkWiki("Skills/Targeters#targeter-option")}).
+            description: `Sets the mob's faction, which can be used for advanced ${mdLinkWiki(
+                "Mobs/Custom-AI",
+            )}}) configurations or ${mdLinkWiki(
+                "Skills/Targeters#targeter-option",
+            )}}).
             Faction is case-sensitive, so be careful when using faction conditions.
 
             ${mdSeeAlso("Mobs/Mobs#faction")}`,
@@ -147,7 +153,208 @@ ${mdSeeAlso("Mobs/Mobs#bossbar")}`,
 
             ${mdSeeAlso("Mobs/Mobs#mount")}`,
         },
-    }).withName("mythic_mob_config"),
+        DisplayOptions: {
+            schema: new SchemaObject((ws, doc, value2) => {
+                if (!isMap(value)) {
+                    return {};
+                }
+
+                const type = value.items.find(
+                    (pair) => isScalar(pair.key) && pair.key.value === "Type",
+                );
+                if (!type) {
+                    return {};
+                }
+
+                const textDisplayOptions = {
+                    Text: {
+                        schema: new SchemaString(),
+                        description: `Sets the text displayed.`,
+                    },
+                };
+
+                const itemDisplayOptions = {
+                    Item: {
+                        schema: new SchemaString(),
+                        description: `Sets the item displayed.`,
+                    },
+                };
+
+                const blockDisplayOptions = {
+                    Block: {
+                        schema: new SchemaString(),
+                        description: `Sets the block displayed.`,
+                    },
+                };
+
+                const baseOptions = {
+                    A: {
+                        schema: new SchemaString(),
+                        description: `test`,
+                    },
+                };
+
+                const options = baseOptions;
+
+                switch (type.value?.toString()) {
+                    case "block_display":
+                        Object.assign(options, blockDisplayOptions);
+                        break;
+                    case "item_display":
+                        Object.assign(options, itemDisplayOptions);
+                        break;
+                    case "text_display":
+                        Object.assign(options, textDisplayOptions);
+                        break;
+                }
+
+                return options;
+            }),
+            description: `Sets the display entity options of the mob.
+
+            Requires mob to have type \`block_display\`, \`item_display\`, or \`text_display\`.
+
+            ${mdSeeAlso("Mobs/Mobs#displayoptions")}`,
+        },
+        Options: {
+            schema: new SchemaMap(),
+            description: `This is a special field which comes with numerous sub-options, like determining if the mob should despawn,
+            setting knockback resistance, follow range, movement speed and many more.
+            A list of available mob options can be found in the ${mdLinkWiki(
+            "Mobs/Options",
+        )}}) page.
+
+            ${mdSeeAlso("Mobs/Mobs#options")}`,
+        },
+        Modules: {
+            schema: new SchemaObject({
+                ThreatTables: {
+                    schema: new SchemaBool(),
+                    description: `Enables or disables ${mdLinkWiki("Mobs/ThreatTables")} for the mob.`,
+                },
+                ImmunityTables: {
+                    schema: new SchemaBool(),
+                    description: `Enables or disables ${mdLinkWiki("Mobs/ImmunityTables")} for the mob.`,
+                },
+            }),
+            description: `This field allows you to enable or disable modules, like ${mdLinkWiki(
+                "Mobs/ThreatTables",
+            )}}) and/or ${mdLinkWiki("Mobs/ImmunityTables")}.
+
+            ${mdSeeAlso("Mobs/Mobs#modules")}`,
+        },
+        AIGoalSelectors: {
+            schema: new SchemaList(new SchemaString()),
+            description: `TModifies and customizes the ${mdLinkWiki("Mobs/Custom-AI#ai-goal-selectors")} of the mob.
+
+            ${mdSeeAlso("Mobs/Mobs#aigoalselectors")}`,
+        },
+        AITargetSelectors: {
+            schema: new SchemaList(new SchemaString()),
+            description: `Modifies and customizes the ${mdLinkWiki("Mobs/Custom-AI#ai-target-selectors")} of the mob.
+
+            ${mdSeeAlso("Mobs/Mobs#aitargetselectors")}`,
+        },
+        Drops: {
+            schema: new SchemaList(new SchemaString()),
+            description: `Add or completely modify the mob loot drops.
+            Can be vanilla items, mythic items, experience points, cross-plugin items (if supported), or even custom drop tables with their own condition system.
+            See ${mdLinkWiki("drops/Drops")} for more information.
+
+            ${mdSeeAlso("Mobs/Mobs#drops")}`,
+        },
+        DamageModifiers: {
+            schema: new SchemaList(new SchemaString()),
+            description: `Modify how much damage the mob will take from different damage causes.
+            For example, DamageModifiers can be used to make the mob immune to melee attacks, but weak to ranged attacks.
+            See ${mdLinkWiki("Mobs/DamageModifiers")} for more information.
+
+            ${mdSeeAlso("Mobs/Mobs#damagemodifiers")}`,
+        },
+        Equipment: {
+            schema: new SchemaList(new SchemaString()),
+            description: `Equips the mob with vanilla items or mythic items when it first spawns.
+            See ${mdLinkWiki("Mobs/Equipment")} for more information.
+
+            ${mdSeeAlso("Mobs/Mobs#equipment")}`,
+        },
+        KillMessages: {
+            schema: new SchemaList(new SchemaString()),
+            description: `Customize the ${mdLinkWiki("Mobs/KillMessages")} that appears when the mob kills a player.
+
+            ${mdSeeAlso("Mobs/Mobs#killmessages")}`,
+        },
+        LevelModifiers: {
+            schema: new SchemaObject(Object.fromEntries(["Health", "Damage", "KnockbackResistance", "Power", "Armor", "MovementSpeed"].map((key) => [
+                key,
+                {
+                    schema: new SchemaNumber(0),
+                    description: `Sets the \`${key}\` statistic the mob will gain per level.`,
+                },
+            ]))),
+            description: `MythicMobs can have ${mdLinkWiki("Mobs/Levels")} and this field is used to determine which kinds of statistics they should gain on when their levels change.
+
+            ${mdSeeAlso("Mobs/Mobs#levelmodifiers")}`,
+        },
+        Disguise: {
+            schema: new SchemaString(),
+            description: `Changes the appearance of the mob to be like other entity types.
+            Requires the plugin [LibsDisguises](https://www.spigotmc.org/resources/libs-disguises-free.81/) to be installed and functioning on your server.
+            See ${mdLinkWiki("Mobs/Disguises")} for more information.
+
+            ${mdSeeAlso("Mobs/Mobs#disguise")}`,
+        },
+        Skills: {
+            schema: new SchemaList(new SchemaString()),
+            description: `Skills are an integral feature of Mythic. All mobs are able to have skills of various types that can be triggered under different circumstances with varying
+            conditions. The Mythic skill system is quite intuitive once you get used to it, and can be used to create anything from simple mobs to incredibly complex bosses.
+            See ${mdLinkWiki("Skills/Skills")} to get started on making your own skills.
+
+            ${mdSeeAlso("Mobs/Mobs#skills")}`,
+        },
+        Nameplate: {
+            schema: new SchemaObject({
+                Enabled: {
+                    schema: new SchemaBool(),
+                    description: `Enables or disables the nameplate.`,
+                    required: true,
+                },
+                Mounted: {
+                    schema: new SchemaBool(),
+                    description: `If true, forces the nameplate to work with modeled entities from the ModelEngine plugin`,
+                },
+            }),
+            description: `Forces the usage of Mythic nameplates on the mob, if the Enabled: true option is used.
+            This makes display names like Display: "Hello\nWorld!" be displayed on two separate lines.
+
+            ${mdSeeAlso("Mobs/Mobs#nameplate")}`,
+        },
+        Hearing: {
+            schema: new SchemaObject({
+                Enabled: {
+                    schema: new SchemaBool(),
+                    description: `Enables or disables the mob's hearing.`,
+                },
+            }),
+            description: `Allows the mob to "hear" sounds like a warden would.
+            Turning this on enables the new ${mdLinkWiki("Skills/Triggers#onhear")} trigger.
+
+            ${mdSeeAlso("Mobs/Mobs#hearing")}`,
+        },
+        Variables: {
+            schema: new SchemaMap(),
+            description: `Instead of using a lot of \`setvariable\` mechanics \`~onSpawn\`, you can make a mob spawn with already set ${mdLinkWiki("Skills/Variables")} via the use the of Variables mob field.
+
+            ${mdSeeAlso("Mobs/Mobs#variables")}`,
+        },
+        Trades: {
+            schema: new SchemaMap(),
+            description: `Customizes the villager trades.
+            Villagers must have a profession and a profession level of 2 to be able to keep its custom trades.
+
+            ${mdSeeAlso("Mobs/Mobs#trades")}`,
+        },
+    })).withName("mythic_mob_config"),
 )
     .onPartialProcess(component(MythicMob, "mobs", SemanticTokenTypes.class))
     .onPartialProcess((ws, doc, v, result) => {
@@ -164,13 +371,36 @@ ${mdSeeAlso("Mobs/Mobs#bossbar")}`,
                 (pair) => isScalar(pair.key) && pair.key.value === "Type",
             );
 
-            if (ws.mythicData.entityIds.has(key.toString().toUpperCase())) {
+            if (includesIgnoreCase(ws.mythicData.entityIds, key.toString())) {
                 // ...
                 if (type) {
                     result.diagnostics.push({
                         ...DIAGNOSTIC_DEFAULT,
                         message: `Type is not required for vanilla override of ${key.toString()}.`,
                         range: doc.convertToRange(type.key.range),
+                    });
+                }
+            }
+
+            // DisplayOptions is only for block_display, item_display, and text_display
+            if (
+                !includesIgnoreCase(
+                    ["block_display", "item_display", "text_display"],
+                    type?.value?.toString() ?? "",
+                )
+            ) {
+                const displayOptions = value.items.find(
+                    (pair) => isScalar(pair.key)
+                        && pair.key.value === "DisplayOptions",
+                );
+
+                if (displayOptions) {
+                    result.diagnostics.push({
+                        ...DIAGNOSTIC_DEFAULT,
+                        message: `DisplayOptions is only available for block_display, item_display, and text_display. Got ${
+                            type?.value?.toString() ?? "unknown"
+                        }.`,
+                        range: doc.convertToRange(displayOptions.key.range),
                     });
                 }
             }
