@@ -19,6 +19,7 @@ import { recursiveReadDir } from "./util/files.js";
 import { semanticTokenHandler } from "./lsp/listeners/semantictokens.js";
 import { ValidationResult } from "./doc";
 import { MythicDataBuilder } from "./mythic/data.js";
+import { definitionHandler } from "./lsp/listeners/definition.js";
 
 async function main() {
     // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- I'm just using this to get the arguments.
@@ -216,6 +217,7 @@ class Workspace {
         connection.onInitialize(initializeHandler(this));
         connection.onHover(hoverHandler(this));
         connection.languages.semanticTokens.on(semanticTokenHandler(this));
+        connection.onDefinition(definitionHandler(this));
         documents.onDidChangeContent((change) => {
             this.logger?.log(`Document ${change.document.uri} changed.`);
             connection
