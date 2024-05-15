@@ -6,6 +6,7 @@ export class RangeLink {
         public fromDoc: MythicDoc,
         public fromRange: Range,
         public toDoc: MythicDoc,
-        public toRange: Range,
+        public toSelectionRange: Range,
+        public toRange?: Range,
     ) {}
 }

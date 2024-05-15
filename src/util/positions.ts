@@ -1,3 +1,4 @@
+import type { Pair, ParsedNode, Range as YamlRange } from "yaml";
 import type { Position, Range } from "vscode-languageserver";
 
 function posIsIn(pos: Position, range: Range) {
@@ -20,4 +21,8 @@ function posCmp(a: Position, b: Position) {
     return a.line - b.line;
 }
 
-export { posIsIn, posCmp };
+function pairRange(pair: Pair<ParsedNode, ParsedNode | null>): YamlRange {
+    return [pair.key.range[0], pair.value!.range[1], pair.value!.range[2]];
+}
+
+export { posIsIn, posCmp, pairRange };
