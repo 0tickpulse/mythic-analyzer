@@ -6,6 +6,7 @@ import type { MythicDoc, Workspace } from "../index.js";
 
 import { highlightYaml } from "../yaml/highlighter.js";
 import { Highlight } from "../lsp/models/highlight.js";
+import { includesIgnoreCase } from "../util/string.js";
 
 import { ValidationResult, SCHEMA_IDS, SchemaObject, SchemaString } from "./schema/index.js";
 
@@ -17,7 +18,7 @@ export class DocMetadata {
             schema: new SchemaString(SCHEMA_IDS)
 
                 .onPartialProcess((ws, doc, value, result) => {
-                    if (!SCHEMA_IDS.includes((value.toJSON() as string).toUpperCase() as SchemaID)) {
+                    if (!includesIgnoreCase(SCHEMA_IDS, value.toJSON() as string)) {
                         return;
                     }
                     result.highlights.unshift(new Highlight(doc.convertToRange(value.range), SemanticTokenTypes.enumMember));
@@ -68,7 +69,7 @@ export class DocMetadata {
                 case "FileType":
                     if (
                         isScalar(value)
-                        && SCHEMA_IDS.includes(value.value as SchemaID)
+                        && includesIgnoreCase(SCHEMA_IDS, value.value as string)
                     ) {
                         metadata.fileType = value.value as SchemaID;
                     }

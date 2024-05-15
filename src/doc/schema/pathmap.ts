@@ -2,8 +2,10 @@ import picomatch from "picomatch";
 
 import type { Schema } from "./schema.js";
 
-import { MYTHIC_SKILL_SCHEMA } from "./file-schemas/mythicSkill.js";
+import { equalsIgnoreCase } from "../../util/string.js";
+
 import { MYTHIC_MOB_SCHEMA } from "./file-schemas/mythicMob.js";
+import { MYTHIC_SKILL_SCHEMA } from "./file-schemas/mythicSkill.js";
 
 const PATH_MAP_DEFAULT = [
     [
@@ -46,7 +48,7 @@ function matchSchemaID(
     pathMap: PathMap = PATH_MAP_DEFAULT,
 ): Schema | undefined {
     for (const [, schema, schemaID] of pathMap) {
-        if (schemaID === id) {
+        if (equalsIgnoreCase(schemaID, id)) {
             return schema;
         }
     }
@@ -61,4 +63,5 @@ type SchemaID = (typeof SCHEMA_IDS)[number];
 
 export type { PathMap, SchemaID };
 
-export { PATH_MAP_DEFAULT, findSchema, matchSchemaID, SCHEMA_IDS };
+export { findSchema, matchSchemaID, PATH_MAP_DEFAULT, SCHEMA_IDS };
+

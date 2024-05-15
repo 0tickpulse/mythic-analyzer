@@ -8,7 +8,7 @@ import type { Workspace } from "../../../index.js";
 
 import { DIAGNOSTIC_DEFAULT } from "../../../errors.js";
 import { Schema, ValidationResult } from "../schema.js";
-import { closest } from "../../../util/string.js";
+import { closest, equalsIgnoreCase } from "../../../util/string.js";
 import { Highlight } from "../../../lsp/models/highlight.js";
 import { isIterable } from "../../../util/types.js";
 
@@ -98,14 +98,14 @@ export class SchemaString extends Schema {
         if (cs) {
             return a === b;
         }
-        return a.toLowerCase() === b.toLowerCase();
+        return equalsIgnoreCase(a, b);
     }
 
     #includes(arr: string[], str: string, cs: boolean): boolean {
         if (cs) {
             return arr.includes(str);
         }
-        return arr.some((s) => s.toLowerCase() === str.toLowerCase());
+        return arr.some((s) => equalsIgnoreCase(s, str));
     }
 
     #closest(arr: string[], str: string, cs: boolean): string | undefined {
