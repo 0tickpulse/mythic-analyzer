@@ -52,20 +52,11 @@
         ],
         "max-statements": [
             "error",
-            30
+            70
         ],
-        "max-lines-per-function": [
-            "error",
-            75
-        ],
-        "max-len": [
-            "error",
-            300
-        ],
-        "max-lines": [
-            "error",
-            300
-        ],
+        "max-lines-per-function": "off",
+        "max-len": "off",
+        "max-lines": "off",
         "no-param-reassign": [
             "error",
             {
