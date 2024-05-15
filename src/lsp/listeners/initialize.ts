@@ -29,6 +29,7 @@ export function initializeHandler(workspace: Workspace) {
                         tokenModifiers: workspace.semanticTokenModifiers,
                     },
                 },
+                definitionProvider: true,
             },
         };
     };
