@@ -3,6 +3,7 @@ import { isScalar } from "yaml";
 
 import { SchemaString } from "../base-types/string.js";
 import { RangeLink } from "../../../lsp/models/rangeLink.js";
+import { pairRange } from "../../../util/positions.js";
 
 export const SCHEMA_MYTHIC_MOB_ID = new SchemaString()
     .withName("mythic_mob_id")
@@ -13,21 +14,24 @@ export const SCHEMA_MYTHIC_MOB_ID = new SchemaString()
         schema.highlight = SemanticTokenTypes.class;
         const newResult = schema.partialProcess(ws, doc, value);
         if (isScalar(value)) {
-            const originalMob = mobs.find(
-                (mob) => mob.id === value.value,
-            );
+            const originalMob = mobs.find((mob) => mob.id === value.value);
             if (!originalMob) {
                 return;
             }
-            const declarations = originalMob.declarations[0]!;
-            newResult.rangeLinks.push(
-                new RangeLink(
-                    doc,
-                    doc.convertToRange(value.range),
-                    originalMob.doc,
-                    doc.convertToRange(declarations.range),
-                ),
-            );
+            const declarations = originalMob.declarations;
+            for (const { doc: declDoc, declaration } of declarations) {
+                newResult.rangeLinks.push(
+                    new RangeLink(
+                        doc,
+                        doc.convertToRange(value.range),
+                        declDoc,
+                        declDoc.convertToRange(declaration.key.range),
+                        declaration.value
+                            ? declDoc.convertToRange(pairRange(declaration))
+                            : undefined,
+                    ),
+                );
+            }
             newResult.hovers.push({
                 contents:
                     "# Mythic Mob: `"

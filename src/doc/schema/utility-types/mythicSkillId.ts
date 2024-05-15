@@ -3,6 +3,7 @@ import { isScalar } from "yaml";
 
 import { SchemaString } from "../base-types/string.js";
 import { RangeLink } from "../../../lsp/models/rangeLink.js";
+import { pairRange } from "../../../util/positions.js";
 
 export const SCHEMA_MYTHIC_SKILL_ID = new SchemaString()
     .withName("mythic_skill_id")
@@ -19,15 +20,20 @@ export const SCHEMA_MYTHIC_SKILL_ID = new SchemaString()
             if (!originalSkill) {
                 return;
             }
-            const declarations = originalSkill.declarations[0]!;
-            newResult.rangeLinks.push(
-                new RangeLink(
-                    doc,
-                    doc.convertToRange(value.range),
-                    originalSkill.doc,
-                    doc.convertToRange(declarations.range),
-                ),
-            );
+            const declarations = originalSkill.declarations;
+            for (const { doc: declDoc, declaration } of declarations) {
+                newResult.rangeLinks.push(
+                    new RangeLink(
+                        doc,
+                        doc.convertToRange(value.range),
+                        declDoc,
+                        declDoc.convertToRange(declaration.key.range),
+                        declaration.value
+                            ? declDoc.convertToRange(pairRange(declaration))
+                            : undefined,
+                    ),
+                );
+            }
             newResult.hovers.push({
                 contents:
                     "# Mythic Skill: `"
