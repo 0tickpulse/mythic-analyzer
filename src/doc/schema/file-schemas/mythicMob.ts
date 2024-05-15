@@ -137,9 +137,9 @@ ${mdSeeAlso("Mobs/Mobs#bossbar")}`,
         Faction: {
             schema: new SchemaString(),
             description: `Sets the mob's faction, which can be used for advanced ${mdLinkWiki(
-                "Mobs/Custom-AI",
+                "Mobs/Custom-AI", "Custom AI",
             )}}) configurations or ${mdLinkWiki(
-                "Skills/Targeters#targeter-option",
+                "Skills/Targeters#targeter-option", "targeter filtering",
             )}}).
             Faction is case-sensitive, so be careful when using faction conditions.
 
@@ -221,7 +221,7 @@ ${mdSeeAlso("Mobs/Mobs#bossbar")}`,
             description: `This is a special field which comes with numerous sub-options, like determining if the mob should despawn,
             setting knockback resistance, follow range, movement speed and many more.
             A list of available mob options can be found in the ${mdLinkWiki(
-            "Mobs/Options",
+            "Mobs/Options", "Mob Options",
         )}}) page.
 
             ${mdSeeAlso("Mobs/Mobs#options")}`,
@@ -230,11 +230,11 @@ ${mdSeeAlso("Mobs/Mobs#bossbar")}`,
             schema: new SchemaObject({
                 ThreatTables: {
                     schema: new SchemaBool(),
-                    description: `Enables or disables ${mdLinkWiki("Mobs/ThreatTables")} for the mob.`,
+                    description: `Enables or disables ${mdLinkWiki("Mobs/ThreatTables", "Threat Tables")} for the mob.`,
                 },
                 ImmunityTables: {
                     schema: new SchemaBool(),
-                    description: `Enables or disables ${mdLinkWiki("Mobs/ImmunityTables")} for the mob.`,
+                    description: `Enables or disables ${mdLinkWiki("Mobs/ImmunityTables", "Immunity Tables")} for the mob.`,
                 },
             }),
             description: `This field allows you to enable or disable modules, like ${mdLinkWiki(
@@ -245,13 +245,13 @@ ${mdSeeAlso("Mobs/Mobs#bossbar")}`,
         },
         AIGoalSelectors: {
             schema: new SchemaList(new SchemaString()),
-            description: `TModifies and customizes the ${mdLinkWiki("Mobs/Custom-AI#ai-goal-selectors")} of the mob.
+            description: `TModifies and customizes the ${mdLinkWiki("Mobs/Custom-AI#ai-goal-selectors", "AI goals")} of the mob.
 
             ${mdSeeAlso("Mobs/Mobs#aigoalselectors")}`,
         },
         AITargetSelectors: {
             schema: new SchemaList(new SchemaString()),
-            description: `Modifies and customizes the ${mdLinkWiki("Mobs/Custom-AI#ai-target-selectors")} of the mob.
+            description: `Modifies and customizes the ${mdLinkWiki("Mobs/Custom-AI#ai-target-selectors", "AI targets")} of the mob.
 
             ${mdSeeAlso("Mobs/Mobs#aitargetselectors")}`,
         },
@@ -280,7 +280,7 @@ ${mdSeeAlso("Mobs/Mobs#bossbar")}`,
         },
         KillMessages: {
             schema: new SchemaList(new SchemaString()),
-            description: `Customize the ${mdLinkWiki("Mobs/KillMessages")} that appears when the mob kills a player.
+            description: `Customize the ${mdLinkWiki("Mobs/KillMessages", "kill messages")} that appears when the mob kills a player.
 
             ${mdSeeAlso("Mobs/Mobs#killmessages")}`,
         },
@@ -292,14 +292,14 @@ ${mdSeeAlso("Mobs/Mobs#bossbar")}`,
                     description: `Sets the \`${key}\` statistic the mob will gain per level.`,
                 },
             ]))),
-            description: `MythicMobs can have ${mdLinkWiki("Mobs/Levels")} and this field is used to determine which kinds of statistics they should gain on when their levels change.
+            description: `MythicMobs can have ${mdLinkWiki("Mobs/Levels", "levels")} and this field is used to determine which kinds of statistics they should gain on when their levels change.
 
             ${mdSeeAlso("Mobs/Mobs#levelmodifiers")}`,
         },
         Disguise: {
             schema: new SchemaString(),
             description: `Changes the appearance of the mob to be like other entity types.
-            Requires the plugin [LibsDisguises](https://www.spigotmc.org/resources/libs-disguises-free.81/) to be installed and functioning on your server.
+            Requires the plugin [🔗 LibsDisguises](https://www.spigotmc.org/resources/libs-disguises-free.81/) to be installed and functioning on your server.
             See ${mdLinkWiki("Mobs/Disguises")} for more information.
 
             ${mdSeeAlso("Mobs/Mobs#disguise")}`,
@@ -337,13 +337,13 @@ ${mdSeeAlso("Mobs/Mobs#bossbar")}`,
                 },
             }),
             description: `Allows the mob to "hear" sounds like a warden would.
-            Turning this on enables the new ${mdLinkWiki("Skills/Triggers#onhear")} trigger.
+            Turning this on enables the new ${mdLinkWiki("Skills/Triggers#onhear", "`~onHear`")} trigger.
 
             ${mdSeeAlso("Mobs/Mobs#hearing")}`,
         },
         Variables: {
             schema: new SchemaMap(),
-            description: `Instead of using a lot of \`setvariable\` mechanics \`~onSpawn\`, you can make a mob spawn with already set ${mdLinkWiki("Skills/Variables")} via the use the of Variables mob field.
+            description: `Instead of using a lot of \`setvariable\` mechanics \`~onSpawn\`, you can make a mob spawn with already set ${mdLinkWiki("Skills/Variables", "variables")} via the use the of Variables mob field.
 
             ${mdSeeAlso("Mobs/Mobs#variables")}`,
         },
