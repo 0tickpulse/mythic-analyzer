@@ -28,6 +28,7 @@ export class SchemaBool extends Schema {
                 ...DIAGNOSTIC_DEFAULT,
                 message: `Expected \`${this.toString(ws, doc, value)}\`.`,
                 range: doc.convertToRange(value.range),
+                code: "yaml-invalid-type",
             });
             return result;
         }
@@ -37,6 +38,7 @@ export class SchemaBool extends Schema {
                 ...DIAGNOSTIC_DEFAULT,
                 message: `Expected a boolean, but got ${value.srcToken!.source}.`,
                 range: doc.convertToRange(value.range),
+                code: "yaml-invalid-type",
             });
         }
         return result;

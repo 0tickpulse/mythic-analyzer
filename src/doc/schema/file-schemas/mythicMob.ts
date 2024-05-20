@@ -1,8 +1,8 @@
-import { SemanticTokenTypes } from "vscode-languageserver";
+import { CompletionItemKind, SemanticTokenTypes } from "vscode-languageserver";
 import { isMap, isScalar } from "yaml";
 
 import { MythicMob } from "../../../document-models/mythicmob.js";
-import { DIAGNOSTIC_DEFAULT } from "../../../errors.js";
+import { DIAGNOSTIC_DEFAULT } from "../../../errors/errors.js";
 import { mdLinkWiki, mdSeeAlso } from "../../../util/markdown.js";
 import { includesIgnoreCase } from "../../../util/string.js";
 import { SchemaBool } from "../base-types/bool.js";
@@ -14,9 +14,48 @@ import { SchemaString } from "../base-types/string.js";
 import { SCHEMA_ENTITY_TYPE } from "../utility-types/entityType.js";
 import { SCHEMA_MYTHIC_MOB_ID } from "../utility-types/mythicMobId.js";
 import { component } from "../utils/component.js";
+import { MythicSkillList } from "../utility-types/mythicSkillList.js";
 
-export const MYTHIC_MOB_SCHEMA = new SchemaMap(
+export const MYTHIC_MOB_SCHEMA: SchemaMap = new SchemaMap(
     new SchemaObject((ws, doc, value) => ({
+        Template: {
+            schema: SCHEMA_MYTHIC_MOB_ID,
+            description: `The base mythic mob to use as a template.
+            This is used to inherit all the settings from another mythic mob.
+
+            ${mdSeeAlso("Mobs/Templates")}`,
+        },
+        Exclude: {
+            schema: new SchemaList(new SchemaString(() => {
+                const properties = MYTHIC_MOB_SCHEMA.properties;
+                if (typeof properties !== "function") {
+                    return []; // This should never happen
+                }
+                const propertyMap = properties(ws, doc, value);
+                const property = Object.values(propertyMap)[0];
+                if (!property) {
+                    return [];
+                }
+                const schemaObject = property.schema;
+                if (!(schemaObject instanceof SchemaObject)) {
+                    return [];
+                }
+                const objectProperties = schemaObject.properties;
+                if (typeof objectProperties !== "function") {
+                    return [];
+                }
+                return Object.keys(objectProperties(ws, doc, value)).map(key => ({
+                    matcher: key,
+                    completionItem: {
+                        label: key,
+                        kind: CompletionItemKind.Property,
+                    },
+                }));
+            })),
+            description: `Excludes unwanted inherited properties from the template.
+
+            ${mdSeeAlso("Mobs/Templates")}`,
+        },
         Type: {
             schema: SCHEMA_ENTITY_TYPE,
             description: `The base entity type of the mythic mob.
@@ -188,10 +227,10 @@ ${mdSeeAlso("Mobs/Mobs#bossbar")}`,
                 };
 
                 const baseOptions = {
-                    A: {
-                        schema: new SchemaString(),
-                        description: `test`,
-                    },
+                    // A: {
+                    //     schema: new SchemaString(),
+                    //     description: `test`,
+                    // },
                 };
 
                 const options = baseOptions;
@@ -211,7 +250,6 @@ ${mdSeeAlso("Mobs/Mobs#bossbar")}`,
                 return options;
             }),
             description: `Sets the display entity options of the mob.
-
             Requires mob to have type \`block_display\`, \`item_display\`, or \`text_display\`.
 
             ${mdSeeAlso("Mobs/Mobs#displayoptions")}`,
@@ -231,6 +269,7 @@ ${mdSeeAlso("Mobs/Mobs#bossbar")}`,
                 ThreatTables: {
                     schema: new SchemaBool(),
                     description: `Enables or disables ${mdLinkWiki("Mobs/ThreatTables", "Threat Tables")} for the mob.`,
+                    aliases: ["ThreatTable"],
                 },
                 ImmunityTables: {
                     schema: new SchemaBool(),
@@ -305,7 +344,7 @@ ${mdSeeAlso("Mobs/Mobs#bossbar")}`,
             ${mdSeeAlso("Mobs/Mobs#disguise")}`,
         },
         Skills: {
-            schema: new SchemaList(new SchemaString()),
+            schema: new MythicSkillList(),
             description: `Skills are an integral feature of Mythic. All mobs are able to have skills of various types that can be triggered under different circumstances with varying
             conditions. The Mythic skill system is quite intuitive once you get used to it, and can be used to create anything from simple mobs to incredibly complex bosses.
             See ${mdLinkWiki("Skills/Skills")} to get started on making your own skills.
@@ -378,6 +417,7 @@ ${mdSeeAlso("Mobs/Mobs#bossbar")}`,
                         ...DIAGNOSTIC_DEFAULT,
                         message: `Type is not required for vanilla override of ${key.toString()}.`,
                         range: doc.convertToRange(type.key.range),
+                        code: "mythic-mob-vanilla-override-type",
                     });
                 }
             }
@@ -401,6 +441,7 @@ ${mdSeeAlso("Mobs/Mobs#bossbar")}`,
                             type?.value?.toString() ?? "unknown"
                         }.`,
                         range: doc.convertToRange(displayOptions.key.range),
+                        code: "mythic-mob-invalid-display-options",
                     });
                 }
             }

@@ -1,5 +1,5 @@
 import type { Range } from "vscode-languageserver-textdocument";
-import type { Diagnostic, Hover } from "vscode-languageserver";
+import type { CompletionItem, Diagnostic, Hover } from "vscode-languageserver";
 import type { ParsedNode } from "yaml";
 import type { MythicSkill } from "../../document-models/mythicskill.js";
 import type { Workspace } from "../../index.js";
@@ -7,6 +7,7 @@ import type { Highlight } from "../../lsp/models/highlight.js";
 import type { RangeLink } from "../../lsp/models/rangeLink.js";
 import type { MythicDoc } from "../mythicdoc.js";
 import type { MythicMob } from "../../document-models/mythicmob.js";
+import type { MythicItem } from "../../document-models/mythicitem.js";
 
 /**
  * The result after validating a value against a schema.
@@ -19,11 +20,18 @@ class ValidationResult {
         public readonly mythic: {
             skills: MythicSkill[];
             mobs: MythicMob[];
+            items: MythicItem[];
         } = {
             skills: [],
             mobs: [],
+            items: [],
         },
         public readonly highlights: Highlight[] = [],
+        public readonly completionItems: {
+            range: Range;
+            // pos: Position;
+            items: CompletionItem[];
+        }[] = [],
     ) {}
 
     /**
@@ -40,8 +48,10 @@ class ValidationResult {
             {
                 skills: [...this.mythic.skills, ...other.mythic.skills],
                 mobs: [...this.mythic.mobs, ...other.mythic.mobs],
+                items: [...this.mythic.items, ...other.mythic.items],
             },
             [...this.highlights, ...other.highlights],
+            [...this.completionItems, ...other.completionItems],
         );
     }
 
@@ -57,7 +67,9 @@ class ValidationResult {
         this.rangeLinks.push(...other.rangeLinks);
         this.mythic.skills.push(...other.mythic.skills);
         this.mythic.mobs.push(...other.mythic.mobs);
-        this.highlights.unshift(...other.highlights);
+        this.mythic.items.push(...other.mythic.items);
+        this.highlights.unshift(...other.highlights); // Prepend highlights so that the last one is the one that is shown.
+        this.completionItems.push(...other.completionItems);
     }
 
     public transformRanges(transformer: (range: Range) => Range): void {
@@ -72,6 +84,9 @@ class ValidationResult {
         });
         this.highlights.forEach((h) => {
             h.range = transformer(h.range);
+        });
+        this.completionItems.forEach((a) => {
+            a.range = transformer(a.range);
         });
     }
 }

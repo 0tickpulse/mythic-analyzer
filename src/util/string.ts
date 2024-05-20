@@ -25,25 +25,28 @@ function stringifyRange(range: Range): string {
     return `${range.start.line}:${range.start.character}-${range.end.line}:${range.end.character}`;
 }
 
-function includesIgnoreCase(arr: Iterable<string>, search: string): boolean;
-function includesIgnoreCase(str: string, search: string): boolean;
+function includesIgnoreCase(
+    arr: Iterable<string>,
+    search: string | undefined
+): boolean;
+function includesIgnoreCase(str: string, search: string | undefined): boolean;
 function includesIgnoreCase(
     arrOrStr: Iterable<string> | string,
-    search: string,
+    search: string | undefined,
 ): boolean {
     if (typeof arrOrStr === "string") {
-        return arrOrStr.toLowerCase().includes(search.toLowerCase());
+        return arrOrStr.toLowerCase().includes(search?.toLowerCase() ?? "");
     }
     for (const str of arrOrStr) {
-        if (str.toLowerCase() === search.toLowerCase()) {
+        if (str.toLowerCase() === search?.toLowerCase()) {
             return true;
         }
     }
     return false;
 }
 
-function equalsIgnoreCase(str: string, search: string): boolean {
-    return str.toLowerCase() === search.toLowerCase();
+function equalsIgnoreCase(str: string, search: string | undefined): boolean {
+    return str.toLowerCase() === search?.toLowerCase();
 }
 
 export { closest, stringifyRange, includesIgnoreCase, equalsIgnoreCase };

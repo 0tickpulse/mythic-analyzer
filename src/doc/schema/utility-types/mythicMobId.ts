@@ -1,4 +1,4 @@
-import { SemanticTokenTypes } from "vscode-languageserver";
+import { CompletionItemKind, SemanticTokenTypes } from "vscode-languageserver";
 import { isScalar } from "yaml";
 
 import { SchemaString } from "../base-types/string.js";
@@ -9,13 +9,27 @@ export const SCHEMA_MYTHIC_MOB_ID = new SchemaString()
     .withName("mythic_mob_id")
     .onFullProcess((ws, doc, value, result) => {
         const mobs = ws.mergedValidationResult().mythic.mobs;
-        const mobNames = mobs.map((mob) => mob.id);
-        const schema = new SchemaString(mobNames);
+        const valueRange = doc.convertToRange(value.range);
+
+        const schema = new SchemaString(
+            mobs.map((m) => ({
+                matcher: m.id,
+                completionItem: {
+                    kind: CompletionItemKind.Class,
+                    label: m.id,
+                    documentation: m.generatedDescription,
+                },
+            })),
+        ).withName("mythic_mob_id");
+
         schema.highlight = SemanticTokenTypes.class;
-        const newResult = schema.partialProcess(ws, doc, value);
+        const newResult = schema
+            .partialProcess(ws, doc, value)
+            .toMerged(schema.fullProcess(ws, doc, value));
         if (isScalar(value)) {
             const originalMob = mobs.find((mob) => mob.id === value.value);
             if (!originalMob) {
+                result.merge(newResult);
                 return;
             }
             const declarations = originalMob.declarations;
@@ -23,7 +37,7 @@ export const SCHEMA_MYTHIC_MOB_ID = new SchemaString()
                 newResult.rangeLinks.push(
                     new RangeLink(
                         doc,
-                        doc.convertToRange(value.range),
+                        valueRange,
                         declDoc,
                         declDoc.convertToRange(declaration.key.range),
                         declaration.value
@@ -33,14 +47,8 @@ export const SCHEMA_MYTHIC_MOB_ID = new SchemaString()
                 );
             }
             newResult.hovers.push({
-                contents:
-                    "# Mythic Mob: `"
-                    + originalMob.id
-                    + "`"
-                    + (originalMob.documentation
-                        ? "\n\n" + originalMob.documentation
-                        : ""),
-                range: doc.convertToRange(value.range),
+                contents: originalMob.generatedDescription,
+                range: valueRange,
             });
         }
         result.merge(newResult);

@@ -5,7 +5,7 @@ import type { MythicDoc, Workspace } from "../../../index.js";
 
 import { ValidationResult } from "../../../index.js";
 import { Schema } from "../schema.js";
-import { DIAGNOSTIC_DEFAULT } from "../../../errors.js";
+import { DIAGNOSTIC_DEFAULT } from "../../../errors/errors.js";
 
 export class SchemaList extends Schema {
     public constructor(public readonly items?: Schema | Schema[]) {
@@ -40,6 +40,7 @@ export class SchemaList extends Schema {
                     ...DIAGNOSTIC_DEFAULT,
                     message: `Expected \`${this.toString(ws, doc, value)}\`.`,
                     range: doc.convertToRange(value.range),
+                    code: "yaml-invalid-type",
                 },
             ]));
         }
@@ -52,6 +53,7 @@ export class SchemaList extends Schema {
                     ...DIAGNOSTIC_DEFAULT,
                     message: `Too many items in list. Expected ${this.items.length}, but got ${value.items.length}.`,
                     range: doc.convertToRange(value.range),
+                    code: "yaml-list-length-mismatch",
                 });
             }
             if (value.items.length < this.items.length) {
@@ -59,6 +61,7 @@ export class SchemaList extends Schema {
                     ...DIAGNOSTIC_DEFAULT,
                     message: `Too few items in list. Expected ${this.items.length}, but got ${value.items.length}.`,
                     range: doc.convertToRange(value.range),
+                    code: "yaml-list-length-mismatch",
                 });
             }
             this.items.forEach((item, i) => {
@@ -74,6 +77,33 @@ export class SchemaList extends Schema {
                 result.merge(this.items.partialProcess(ws, doc, item));
             }
         }
+        return result;
+    }
+
+    public override fullProcess(ws: Workspace, doc: MythicDoc, value: ParsedNode): ValidationResult {
+        const result = super.fullProcess(ws, doc, value);
+        if (!isSeq(value)) {
+            return result;
+        }
+        if (this.items === undefined) {
+            return result;
+        }
+
+        if (Array.isArray(this.items)) {
+            this.items.forEach((item, i) => {
+                const yamlItem = value.items[i];
+                if (!yamlItem) {
+                    return;
+                }
+                const itemResult = item.fullProcess(ws, doc, yamlItem);
+                result.merge(itemResult);
+            });
+        } else {
+            for (const item of value.items) {
+                result.merge(this.items.fullProcess(ws, doc, item));
+            }
+        }
+
         return result;
     }
 }

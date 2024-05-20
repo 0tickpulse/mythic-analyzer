@@ -1,17 +1,20 @@
 import type { Pair, ParsedNode, Range as YamlRange } from "yaml";
 import type { Position, Range } from "vscode-languageserver";
 
+/**
+ * Checks if a position is within a range.
+ * This function is inclusive.
+ *
+ * @param pos   The position to check.
+ * @param range The range to check.
+ */
 function posIsIn(pos: Position, range: Range) {
-    if (pos.line < range.start.line || pos.line > range.end.line) {
-        return false;
-    }
-    if (pos.line === range.start.line && pos.character < range.start.character) {
-        return false;
-    }
-    if (pos.line === range.end.line && pos.character > range.end.character) {
-        return false;
-    }
-    return true;
+    return (
+        pos.line >= range.start.line
+        && pos.line <= range.end.line
+        && pos.character >= range.start.character
+        && pos.character <= range.end.character
+    );
 }
 
 function posCmp(a: Position, b: Position) {

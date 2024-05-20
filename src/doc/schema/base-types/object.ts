@@ -1,11 +1,11 @@
 import { isMap, isScalar } from "yaml";
 
-import type { Pair, ParsedNode } from "yaml";
+import type { Pair, ParsedNode, YAMLMap } from "yaml";
 import type { MythicDoc } from "../../mythicdoc.js";
 import type { SchemaValueOrFn, Workspace } from "../../../index.js";
 import type { ValidationResult } from "../schema.js";
 
-import { DIAGNOSTIC_DEFAULT } from "../../../errors.js";
+import { DIAGNOSTIC_DEFAULT } from "../../../errors/errors.js";
 import { Schema } from "../schema.js";
 import { closest } from "../../../util/string.js";
 
@@ -114,7 +114,6 @@ class SchemaObject extends Schema {
             .join(", ")} }`;
     }
 
-    // eslint-disable-next-line max-lines-per-function
     public override partialProcess(
         ws: Workspace,
         doc: MythicDoc,
@@ -126,65 +125,92 @@ class SchemaObject extends Schema {
                 ...DIAGNOSTIC_DEFAULT,
                 message: `Expected \`${this.toString(ws, doc, value)}\`.`,
                 range: doc.convertToRange(value.range),
+                code: "yaml-invalid-type",
             });
             return result;
         }
         const properties = this.submapped(ws, doc, value);
+
         for (const [key, property] of Object.entries(properties)) {
-            const pair = value.items.find(
-                (pair) => isScalar(pair.key) && pair.key.value === key,
+            const pairs = value.items.filter(
+                (pair) => isScalar(pair.key)
+                    && (pair.key.value === key
+                        || (property.aliases
+                            ? this.resolveObjectValueOrFn(
+                                ws,
+                                doc,
+                                pair.key,
+                                value,
+                                property.aliases,
+                            )?.includes(pair.key.value as string)
+                            : false)),
             );
-            if (!pair) {
-                if (property.required && key.split(".").length === 1) { // only check for top-level properties
+            if (pairs.length === 0) {
+                if (property.required && key.split(".").length === 1) {
+                    // only check for top-level properties
                     result.diagnostics.push({
                         ...DIAGNOSTIC_DEFAULT,
                         message: `Missing required property ${key}.`,
                         range: doc.convertToRange(value.range),
+                        code: "yaml-missing-property",
                     });
                 }
                 continue;
             }
-            if (!pair.value) {
-                result.diagnostics.push({
-                    ...DIAGNOSTIC_DEFAULT,
-                    message: `Expected a value for ${key}.`,
+            if (pairs.length > 1) {
+                for (const pair of pairs) {
+                    result.diagnostics.push({
+                        ...DIAGNOSTIC_DEFAULT,
+                        message: `Duplicate property ${key}.`,
+                        range: doc.convertToRange(pair.key.range),
+                        code: "yaml-duplicate-property",
+                    });
+                }
+            }
+            for (const pair of pairs) {
+                if (!pair.value) {
+                    result.diagnostics.push({
+                        ...DIAGNOSTIC_DEFAULT,
+                        message: `Expected a value for ${key}.`,
+                        range: doc.convertToRange(pair.key.range),
+                        code: "yaml-missing-value",
+                    });
+                    continue;
+                }
+                let hover = `\`${key}\`: \`${property.schema.toString(
+                    ws,
+                    doc,
+                    pair.value,
+                )}\``;
+                const description = this.resolveObjectValueOrFn(
+                    ws,
+                    doc,
+                    pair.key,
+                    value,
+                    property.description,
+                );
+                if (description) {
+                    hover += `\n\n${description}`;
+                }
+                result.hovers.push({
                     range: doc.convertToRange(pair.key.range),
+                    contents: hover,
                 });
-                continue;
-            }
-            let hover = `\`${key}\`: \`${property.schema.toString(
-                ws,
-                doc,
-                pair.value,
-            )}\``;
-            const description = this.resolveObjectValueOrFn(
-                ws,
-                doc,
-                pair.key,
-                value,
-                property.description,
-            );
-            if (description) {
-                hover += `\n\n${description}`;
-            }
-            result.hovers.push({
-                range: doc.convertToRange(pair.key.range),
-                contents: hover,
-            });
 
-            const valueResult = this.resolveObjectValueOrFn(
-                ws,
-                doc,
-                pair.key,
-                value,
-                property.schema,
-            ).partialProcess(ws, doc, pair.value);
+                const valueResult = this.resolveObjectValueOrFn(
+                    ws,
+                    doc,
+                    pair.key,
+                    value,
+                    property.schema,
+                ).partialProcess(ws, doc, pair.value);
 
-            result.merge(valueResult);
+                result.merge(valueResult);
+            }
         }
         for (const pair of value.items) {
             const key = pair.key;
-            if (!properties[key.toString()]) {
+            if (!this.propertyIncludesKey(ws, doc, key, pair.value, properties, key.toString())) {
                 const closestValue = closest(
                     key.toString(),
                     Object.keys(properties),
@@ -197,6 +223,7 @@ class SchemaObject extends Schema {
                     ...DIAGNOSTIC_DEFAULT,
                     message: error,
                     range: doc.convertToRange(key.range),
+                    code: "yaml-unexpected-property",
                 });
             }
         }
@@ -232,11 +259,62 @@ class SchemaObject extends Schema {
         return result;
     }
 
+    /**
+     * Respects property aliases.
+     */
+    protected valueHasProperty(
+        ws: Workspace,
+        doc: MythicDoc,
+        value: YAMLMap.Parsed,
+        key: string,
+        properties: Record<string, SchemaObjectProperty>,
+    ): boolean {
+        return Boolean(
+            value.items.find(
+                (pair) => isScalar(pair.key)
+                    && (pair.key.value === key || properties[key]?.aliases
+                        ? this.resolveObjectValueOrFn(
+                            ws,
+                            doc,
+                            pair.key,
+                            value,
+                            properties[key]?.aliases,
+                        )?.includes(pair.key.value as string)
+                        : false),
+            ),
+        );
+    }
+
+    protected propertyIncludesKey(
+        ws: Workspace,
+        doc: MythicDoc,
+        keyNode: ParsedNode,
+        valueNode: ParsedNode | null,
+        properties: Record<string, SchemaObjectProperty>,
+        key: string,
+    ): boolean {
+        // check if properties include the key, and also check all aliases
+        return Boolean(
+            Object.keys(properties).find(
+                (propertyKey) => propertyKey === key
+                    || (properties[propertyKey]?.aliases
+                        ? this.resolveObjectValueOrFn(
+                            ws,
+                            doc,
+                            keyNode,
+                            valueNode,
+                            properties[propertyKey]?.aliases,
+                        )?.includes(key)
+                        : false),
+            ),
+        );
+    }
+
     protected resolveObjectValueOrFn<T>(
         ws: Workspace,
         doc: MythicDoc,
         key: ParsedNode,
-        value: ParsedNode,
+        value: ParsedNode | null,
         valueOrFn: SchemaObjectValueOrFn<T>,
     ): T {
         if (typeof valueOrFn === "function") {
@@ -254,7 +332,7 @@ type SchemaObjectValueOrFn<T> = T extends (...args: unknown[]) => unknown
         ws: Workspace,
         doc: MythicDoc,
         key: ParsedNode,
-        value: ParsedNode
+        value: ParsedNode | null,
     ) => T);
 
 type SchemaObjectProperty = {
@@ -264,6 +342,7 @@ type SchemaObjectProperty = {
      */
     required?: SchemaObjectValueOrFn<boolean | undefined>;
     description?: SchemaObjectValueOrFn<string | undefined>;
+    aliases?: SchemaObjectValueOrFn<string[] | undefined>;
 };
 
 export { SchemaObject };

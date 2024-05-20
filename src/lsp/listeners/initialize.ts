@@ -18,6 +18,7 @@ export function initializeHandler(workspace: Workspace) {
         for (const doc of workspace.docs.values()) {
             doc.partialProcess(workspace);
         }
+
         return {
             capabilities: {
                 hoverProvider: true,
@@ -30,6 +31,9 @@ export function initializeHandler(workspace: Workspace) {
                     },
                 },
                 definitionProvider: true,
+                completionProvider: {
+                    triggerCharacters: ["-", " "],
+                },
             },
         };
     };

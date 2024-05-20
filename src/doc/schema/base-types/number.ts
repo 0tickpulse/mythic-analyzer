@@ -3,7 +3,7 @@ import type { MythicDoc, Workspace } from "../../../index.js";
 import type { SchemaValueOrFn } from "../schema.js";
 
 import { Schema, ValidationResult } from "../schema.js";
-import { DIAGNOSTIC_DEFAULT } from "../../../errors.js";
+import { DIAGNOSTIC_DEFAULT } from "../../../errors/errors.js";
 
 export class SchemaNumber extends Schema {
     public constructor(
@@ -25,6 +25,7 @@ export class SchemaNumber extends Schema {
                     ...DIAGNOSTIC_DEFAULT,
                     message: `Expected \`${this.toString(ws, doc, value)}\`.`,
                     range: doc.convertToRange(value.range),
+                    code: "yaml-invalid-type",
                 },
             ]));
         }
