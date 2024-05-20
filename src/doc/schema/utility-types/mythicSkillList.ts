@@ -11,6 +11,7 @@ import { LineConfig } from "../../../mythicskills/lineconfig.js";
 import { SkillMechanic } from "../../../mythicskills/skillmechanic.js";
 import { nodePreciseSource } from "../../../util/yamlNodes.js";
 import { SchemaList } from "../base-types/list.js";
+import { SkillCondition } from "../../../mythicskills/skillcondition.js";
 
 export class MythicSkillList extends SchemaList {
     public constructor(public supportsTriggers = true) {
@@ -179,6 +180,47 @@ export class MythicSkillList extends SchemaList {
 
                 skillMechanic.trigger = trigger;
                 result.merge(trigger.result);
+            }
+
+            if (!component.startsWith("=") && !component.startsWith(">") && !component.startsWith("<")) {
+                if (component.startsWith("?")) {
+                    const condition = new SkillCondition(
+                        ws,
+                        doc,
+                        component,
+                        adjustedOffset,
+                    ).addHighlights(ws, doc);
+
+                    if (condition.questionToken) {
+                        result.highlights.unshift(
+                            new Highlight(
+                                doc.convertToRange(condition.questionToken.range),
+                                SemanticTokenTypes.operator,
+                            ),
+                        );
+                    }
+
+                    if (condition.triggerToken) {
+                        result.highlights.unshift(
+                            new Highlight(
+                                doc.convertToRange(condition.triggerToken.range),
+                                SemanticTokenTypes.operator,
+                            ),
+                        );
+                    }
+
+                    if (condition.notToken) {
+                        result.highlights.unshift(
+                            new Highlight(
+                                doc.convertToRange(condition.notToken.range),
+                                SemanticTokenTypes.operator,
+                            ),
+                        );
+                    }
+
+                    skillMechanic.conditions.push(condition);
+                    result.merge(condition.result);
+                }
             }
 
             componentOffset += component.length + 1;
