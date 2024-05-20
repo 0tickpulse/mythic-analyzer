@@ -10,4 +10,13 @@ export class MythicMob extends MythicComponent {
         }
         return type.toString();
     }
+
+    public get generatedDescription(): string {
+        return (
+            "# Mythic Mob: `"
+            + this.id
+            + "`"
+            + (this.documentation ? "\n\n" + this.documentation : "")
+        );
+    }
 }

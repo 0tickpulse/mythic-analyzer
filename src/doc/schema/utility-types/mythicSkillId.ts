@@ -1,4 +1,4 @@
-import { SemanticTokenTypes } from "vscode-languageserver";
+import { CompletionItemKind, SemanticTokenTypes } from "vscode-languageserver";
 import { isScalar } from "yaml";
 
 import { SchemaString } from "../base-types/string.js";
@@ -9,15 +9,29 @@ export const SCHEMA_MYTHIC_SKILL_ID = new SchemaString()
     .withName("mythic_skill_id")
     .onFullProcess((ws, doc, value, result) => {
         const skills = ws.mergedValidationResult().mythic.skills;
-        const skillNames = skills.map((skill) => skill.id);
-        const schema = new SchemaString(skillNames);
+        const valueRange = doc.convertToRange(value.range);
+
+        const schema = new SchemaString(
+            skills.map((s) => ({
+                matcher: s.id,
+                completionItem: {
+                    kind: CompletionItemKind.Function,
+                    label: s.id,
+                    documentation: s.generatedDescription,
+                },
+            })),
+        ).withName("mythic_skill_id");
+
         schema.highlight = SemanticTokenTypes.function;
-        const newResult = schema.partialProcess(ws, doc, value);
+        const newResult = schema
+            .partialProcess(ws, doc, value)
+            .toMerged(schema.fullProcess(ws, doc, value));
         if (isScalar(value)) {
             const originalSkill = skills.find(
                 (skill) => skill.id === value.value,
             );
             if (!originalSkill) {
+                result.merge(newResult);
                 return;
             }
             const declarations = originalSkill.declarations;
@@ -25,7 +39,7 @@ export const SCHEMA_MYTHIC_SKILL_ID = new SchemaString()
                 newResult.rangeLinks.push(
                     new RangeLink(
                         doc,
-                        doc.convertToRange(value.range),
+                        valueRange,
                         declDoc,
                         declDoc.convertToRange(declaration.key.range),
                         declaration.value
@@ -42,7 +56,7 @@ export const SCHEMA_MYTHIC_SKILL_ID = new SchemaString()
                     + (originalSkill.documentation
                         ? "\n\n" + originalSkill.documentation
                         : ""),
-                range: doc.convertToRange(value.range),
+                range: valueRange,
             });
         }
         result.merge(newResult);

@@ -6,6 +6,7 @@ import {
     ProposedFeatures,
 } from "vscode-languageserver/node";
 import { TextDocument } from "vscode-languageserver-textdocument";
+import { URI } from "vscode-uri";
 
 import type { Connection } from "vscode-languageserver";
 import type { Logger } from "./logger.js";
@@ -20,6 +21,8 @@ import { semanticTokenHandler } from "./lsp/listeners/semantictokens.js";
 import { ValidationResult } from "./doc";
 import { MythicDataBuilder } from "./mythic/data.js";
 import { definitionHandler } from "./lsp/listeners/definition.js";
+import { LineConfig } from "./mythicskills/lineconfig.js";
+import { completionHandler } from "./lsp/listeners/completion.js";
 
 async function main() {
     // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- I'm just using this to get the arguments.
@@ -67,6 +70,26 @@ async function main() {
             //     const endCharacter = end.character;
             //     process.stdout.write(`${line}:${character}-${endLine}:${endCharacter} ${message}\n`);
             // }
+        }
+    } else if (mode === "skilltest") {
+        process.stdout.write("== MYTHIC SKILL TEST ==\n");
+        const workspace = new Workspace();
+        workspace.logger = STDOUT_LOGGER;
+
+        // recursively listen for input
+        for (;;) {
+            process.stdout.write("Enter a skill: ");
+            const skill = await new Promise<string>((resolve) => {
+                process.stdin.once("data", (data) => {
+                    resolve(data.toString().trim());
+                });
+            });
+
+            const doc = new MythicDoc(skill, URI.file("stdin"));
+            const skillObject = new LineConfig(workspace, doc, skill);
+
+            workspace.logger.log(JSON.stringify(skillObject));
+            workspace.logger.log(skillObject.config);
         }
     }
 }
@@ -218,6 +241,7 @@ class Workspace {
         connection.onHover(hoverHandler(this));
         connection.languages.semanticTokens.on(semanticTokenHandler(this));
         connection.onDefinition(definitionHandler(this));
+        connection.onCompletion(completionHandler(this));
         documents.onDidChangeContent((change) => {
             this.logger?.log(`Document ${change.document.uri} changed.`);
             connection
@@ -284,6 +308,6 @@ if (require.main === module) {
 
 export * from "./doc";
 export * from "./document-models";
-export * from "./errors";
+export * from "./errors/errors.js";
 export * from "./logger";
 export { Workspace };

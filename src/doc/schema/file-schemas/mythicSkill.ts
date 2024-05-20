@@ -3,7 +3,7 @@ import { SemanticTokenTypes } from "vscode-languageserver";
 import { isScalar } from "yaml";
 
 import { MythicSkill } from "../../../document-models/mythicskill.js";
-import { DIAGNOSTIC_DEFAULT } from "../../../errors.js";
+import { DIAGNOSTIC_DEFAULT } from "../../../errors/errors.js";
 import { parseDocumentation } from "../../../util/documentationparser.js";
 import { mdSeeAlso } from "../../../util/markdown.js";
 import { SchemaBool } from "../base-types/bool.js";
@@ -14,6 +14,7 @@ import { SchemaObject } from "../base-types/object.js";
 import { SchemaString } from "../base-types/string.js";
 import { SCHEMA_MYTHIC_SKILL_ID } from "../utility-types/mythicSkillId.js";
 import { component } from "../utils/component.js";
+import { MythicSkillList } from "../utility-types/mythicSkillList.js";
 
 export const MYTHIC_SKILL_SCHEMA = new SchemaMap(
     new SchemaObject({
@@ -52,6 +53,7 @@ export const MYTHIC_SKILL_SCHEMA = new SchemaMap(
                             ...DIAGNOSTIC_DEFAULT,
                             message: `Cooldown should be divisible by ${ws.mythicData.tickDuration} (1 tick).`,
                             range: doc.convertToRange(v.range),
+                            code: "mythic-skill-invalid-cooldown",
                         });
                     }
                 },
@@ -62,7 +64,7 @@ export const MYTHIC_SKILL_SCHEMA = new SchemaMap(
                 + mdSeeAlso("Skills/Metaskills#cooldown"),
         },
         Skills: {
-            schema: new SchemaList(new SchemaString()),
+            schema: new MythicSkillList(false),
             required: true,
             description:
                 "The skills that this skill will use."

@@ -50,6 +50,7 @@ export function component<
                     ...DIAGNOSTIC_DEFAULT,
                     message: `Whitespaces are not allowed here!`,
                     range: doc.convertToRange(key.range),
+                    code: "mythic-invalid-id",
                 });
             }
 
@@ -62,6 +63,7 @@ export function component<
                     ...DIAGNOSTIC_DEFAULT,
                     message: `Duplicate ${componentType} id: ${id}`,
                     range: doc.convertToRange(key.range),
+                    code: "mythic-duplicate-id",
                 });
                 const existingComponent = ws
                     .mergedValidationResult()
@@ -90,7 +92,6 @@ export function component<
 
             const idKey = doc.source.slice(yamlRange[0], yamlRange[1]);
 
-            ws.logger?.debug({ pair, idKey, walked, ids, ws, doc, value });
             if (ids.includes(idKey)) {
                 const existingComponent = ws
                     .mergedValidationResult()
