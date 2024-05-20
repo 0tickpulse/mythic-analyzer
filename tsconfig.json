@@ -12,7 +12,7 @@
         "downlevelIteration": false,
         "emitDecoratorMetadata": null,
         "esModuleInterop": true,
-        "exactOptionalPropertyTypes": true,
+        "exactOptionalPropertyTypes": false,
         "experimentalDecorators": null,
         "forceConsistentCasingInFileNames": true,
         "importHelpers": false,
