@@ -30,7 +30,7 @@ export class SchemaNumber extends Schema {
             ]));
         }
 
-        const [min, max, minInclusive, maxInclusive, integer] = this.resolveValuesOrFns(ws, doc, value,
+        const [min, max, minInclusive, maxInclusive, integer] = Schema.resolveValuesOrFns(ws, doc, value,
             this.min,
             this.max,
             this.minInclusive,
@@ -74,7 +74,7 @@ export class SchemaNumber extends Schema {
     }
 
     public override internalName(ws: Workspace, doc: MythicDoc, value: ParsedNode) {
-        const [min, max, minInclusive, maxInclusive, integer] = this.resolveValuesOrFns(ws, doc, value,
+        const [min, max, minInclusive, maxInclusive, integer] = Schema.resolveValuesOrFns(ws, doc, value,
             this.min,
             this.max,
             this.minInclusive,
@@ -91,5 +91,25 @@ export class SchemaNumber extends Schema {
             })`;
         }
         return res;
+    }
+
+    public withMin(min: SchemaValueOrFn<number>): this {
+        return new SchemaNumber(min, this.max, this.minInclusive, this.maxInclusive, this.integer) as this;
+    }
+
+    public withMax(max: SchemaValueOrFn<number>): this {
+        return new SchemaNumber(this.min, max, this.minInclusive, this.maxInclusive, this.integer) as this;
+    }
+
+    public withMinInclusive(minInclusive: SchemaValueOrFn<boolean>): this {
+        return new SchemaNumber(this.min, this.max, minInclusive, this.maxInclusive, this.integer) as this;
+    }
+
+    public withMaxInclusive(maxInclusive: SchemaValueOrFn<boolean>): this {
+        return new SchemaNumber(this.min, this.max, this.minInclusive, maxInclusive, this.integer) as this;
+    }
+
+    public withInteger(integer: SchemaValueOrFn<boolean>): this {
+        return new SchemaNumber(this.min, this.max, this.minInclusive, this.maxInclusive, integer) as this;
     }
 }
