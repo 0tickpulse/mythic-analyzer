@@ -24,3 +24,7 @@ try {
     console.error((e as any).stack);
 }
 ```
+
+## Credits
+
+This library is based on the this [library template](https://github.com/dzek69/ts-library-template).
