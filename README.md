@@ -27,4 +27,4 @@ try {
 
 ## Credits
 
-This library is based on the this [library template](https://github.com/dzek69/ts-library-template).
+This library is based on this [library template](https://github.com/dzek69/ts-library-template).
