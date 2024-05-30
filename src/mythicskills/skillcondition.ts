@@ -1,3 +1,5 @@
+import { SemanticTokenTypes } from "vscode-languageserver";
+
 import type { MythicDoc, Workspace } from "../index.js";
 
 import { DIAGNOSTIC_DEFAULT, ValidationResult } from "../index.js";
@@ -55,17 +57,26 @@ export class SkillCondition extends LineConfig {
         } else {
             condRestOffset = 1;
         }
-        const condRest = source.substring(condRestOffset);
-        if (condRest.startsWith("!")) {
+        if (source.substring(condRestOffset).startsWith("!")) {
             notToken = new LineToken("!", [
                 LineConfig.createPos(source, condRestOffset, offset),
                 LineConfig.createPos(source, condRestOffset + 1, offset),
                 LineConfig.createPos(source, condRestOffset + 1, offset),
             ]);
+            condRestOffset++;
         }
         super(ws, doc, source.substring(condRestOffset), offset + condRestOffset);
         this.questionToken = quesToken;
         this.triggerToken = triggerToken;
         this.notToken = notToken;
+    }
+
+    public override addHighlights(ws: Workspace, doc: MythicDoc): this {
+        super.addHighlights(ws, doc);
+        this.main?.addHighlight(ws, doc, this.result, SemanticTokenTypes.function);
+        this.questionToken?.addHighlight(ws, doc, this.result, SemanticTokenTypes.operator);
+        this.triggerToken?.addHighlight(ws, doc, this.result, SemanticTokenTypes.operator);
+        this.notToken?.addHighlight(ws, doc, this.result, SemanticTokenTypes.operator);
+        return this;
     }
 }

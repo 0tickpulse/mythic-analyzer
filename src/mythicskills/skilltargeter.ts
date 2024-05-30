@@ -1,3 +1,5 @@
+import { SemanticTokenTypes } from "vscode-languageserver";
+
 import type { MythicDoc } from "../doc/index.js";
 import type { Workspace } from "../index.js";
 
@@ -30,5 +32,12 @@ export class SkillTargeter extends LineConfig {
             LineConfig.createPos(source, 1, offset),
             LineConfig.createPos(source, 1, offset),
         ]);
+    }
+
+    public override addHighlights(ws: Workspace, doc: MythicDoc): this {
+        super.addHighlights(ws, doc);
+        this.atToken.addHighlight(ws, doc, this.result, SemanticTokenTypes.operator);
+        this.main?.addHighlight(ws, doc, this.result, SemanticTokenTypes.class);
+        return this;
     }
 }

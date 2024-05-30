@@ -1,5 +1,5 @@
 import type { MythicDoc, Workspace } from "../index.js";
-import type { LineConfig } from "./lineconfig.js";
+import type { LineConfig, LineToken } from "./lineconfig.js";
 import type { SkillCondition } from "./skillcondition.js";
 
 import { SkillTrigger } from "./skilltrigger.js";
@@ -11,6 +11,8 @@ export class SkillMechanic {
     public trigger?: SkillTrigger;
 
     public conditions: SkillCondition[] = [];
+
+    public chanceToken?: LineToken;
 
     public constructor(public source: string, public lineConfig: LineConfig) {}
 

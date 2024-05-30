@@ -7,7 +7,7 @@ import type { MythicDoc, ValidationResult } from "../../index.js";
 
 import { DIAGNOSTIC_DEFAULT } from "../../../index.js";
 import { Highlight } from "../../../lsp/models/highlight.js";
-import { LineConfig } from "../../../mythicskills/lineconfig.js";
+import { LineConfig, LineToken } from "../../../mythicskills/lineconfig.js";
 import { SkillMechanic } from "../../../mythicskills/skillmechanic.js";
 import { nodePreciseSource } from "../../../util/yamlNodes.js";
 import { SchemaList } from "../base-types/list.js";
@@ -114,21 +114,6 @@ export class MythicSkillList extends SchemaList {
                     adjustedOffset,
                 ).addHighlights(ws, doc);
                 skillMechanic.targeter = targeter;
-                if (targeter.main) {
-                    result.highlights.unshift(
-                        new Highlight(
-                            doc.convertToRange(targeter.main.range),
-                            SemanticTokenTypes.class,
-                        ),
-                    );
-                }
-                // highlight the @
-                result.highlights.unshift(
-                    new Highlight(
-                        doc.convertToRange(targeter.atToken.range),
-                        SemanticTokenTypes.operator,
-                    ),
-                );
 
                 result.merge(targeter.result);
             }
@@ -191,35 +176,47 @@ export class MythicSkillList extends SchemaList {
                         adjustedOffset,
                     ).addHighlights(ws, doc);
 
-                    if (condition.questionToken) {
-                        result.highlights.unshift(
-                            new Highlight(
-                                doc.convertToRange(condition.questionToken.range),
-                                SemanticTokenTypes.operator,
-                            ),
-                        );
-                    }
-
-                    if (condition.triggerToken) {
-                        result.highlights.unshift(
-                            new Highlight(
-                                doc.convertToRange(condition.triggerToken.range),
-                                SemanticTokenTypes.operator,
-                            ),
-                        );
-                    }
-
-                    if (condition.notToken) {
-                        result.highlights.unshift(
-                            new Highlight(
-                                doc.convertToRange(condition.notToken.range),
-                                SemanticTokenTypes.operator,
-                            ),
-                        );
-                    }
-
                     skillMechanic.conditions.push(condition);
                     result.merge(condition.result);
+                } else if (/^[-]?[0-9]*[.]?[0-9]+$/.test(component)) {
+                    if (skillMechanic.chanceToken) {
+                        result.diagnostics.push({
+                            ...DIAGNOSTIC_DEFAULT,
+                            message: `Only one chance allowed per skill!`,
+                            range: {
+                                start: doc.convertToPosition(componentOffset),
+                                end: doc.convertToPosition(
+                                    componentOffset
+                                        + LineConfig.createPos(
+                                            component,
+                                            component.length,
+                                            0,
+                                        ),
+                                ),
+                            },
+                            code: "mythic-skill-too-many-chance-tokens",
+                        });
+                    }
+
+                    skillMechanic.chanceToken = new LineToken(
+                        component,
+                        [
+                            LineConfig.createPos(component, 0, adjustedOffset),
+                            LineConfig.createPos(component, component.length, adjustedOffset),
+                            LineConfig.createPos(component, component.length, adjustedOffset),
+                        ],
+                    );
+                    skillMechanic.chanceToken.addHighlight(ws, doc, result, SemanticTokenTypes.number);
+
+                    const chance = parseFloat(component);
+                    if (chance < 0 || chance > 1) {
+                        result.diagnostics.push({
+                            ...DIAGNOSTIC_DEFAULT,
+                            message: `Chance must be between 0 and 1!`,
+                            range: doc.convertToRange(skillMechanic.chanceToken.range),
+                            code: "mythic-skill-invalid-chance",
+                        });
+                    }
                 }
             }
 
