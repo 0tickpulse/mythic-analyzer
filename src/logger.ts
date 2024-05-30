@@ -1,7 +1,10 @@
 const STDOUT_LOGGER: Logger = {
     /* eslint-disable no-console -- console is fine here */
     supportsColor: true,
-    debug: console.debug,
+    debug: <T>(arg: T) => {
+        console.debug(arg);
+        return arg;
+    },
     log: console.log,
     warn: console.warn,
     error: console.error,
@@ -17,7 +20,7 @@ interface Logger {
      * Defaults to `true`.
      */
     supportsColor?: boolean;
-    debug: (...args: unknown[]) => void;
+    debug: (<T>(arg: T) => T) & ((arg1: unknown, arg2: unknown, ...args: unknown[]) => void);
     log: (...args: unknown[]) => void;
     warn: (...args: unknown[]) => void;
     error: (...args: unknown[]) => void;
