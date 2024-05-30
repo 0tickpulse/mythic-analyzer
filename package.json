@@ -10,6 +10,7 @@
     "compile": "pnpm run compile:esm && pnpm run compile:cjs",
     "compile:esm": "rm -rf esm && tsc --project tsconfig.esm.json && node ./build-scripts/compile.esm.after.mjs",
     "compile:cjs": "rm -rf dist && tsc --project tsconfig.cjs.json && node ./build-scripts/compile.cjs.after.mjs",
+    "compileandwebpack": "sh ./build-scripts/compileandwebpack.sh",
     "typecheck": "tsc --noEmit",
     "lint": "eslint src --ext .ts,.tsx,.js,.jsx,.mjs",
     "lint:fix": "pnpm run lint --fix",
