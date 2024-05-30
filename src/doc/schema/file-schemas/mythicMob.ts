@@ -284,7 +284,7 @@ ${mdSeeAlso("Mobs/Mobs#bossbar")}`,
         },
         AIGoalSelectors: {
             schema: new SchemaList(new SchemaString()),
-            description: `TModifies and customizes the ${mdLinkWiki("Mobs/Custom-AI#ai-goal-selectors", "AI goals")} of the mob.
+            description: `Modifies and customizes the ${mdLinkWiki("Mobs/Custom-AI#ai-goal-selectors", "AI goals")} of the mob.
 
             ${mdSeeAlso("Mobs/Mobs#aigoalselectors")}`,
         },
