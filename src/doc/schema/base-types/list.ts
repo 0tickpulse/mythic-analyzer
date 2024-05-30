@@ -8,7 +8,7 @@ import { Schema } from "../schema.js";
 import { DIAGNOSTIC_DEFAULT } from "../../../errors/errors.js";
 
 export class SchemaList extends Schema {
-    public constructor(public readonly items?: Schema | Schema[]) {
+    public constructor(public readonly items?: Schema | Schema[], public readonly allowDupe = true) {
         super();
     }
 
@@ -75,6 +75,18 @@ export class SchemaList extends Schema {
         } else {
             for (const item of value.items) {
                 result.merge(this.items.partialProcess(ws, doc, item));
+            }
+        }
+        for (let i = 0; i < value.items.length; i++) {
+            for (let j = i + 1; j < value.items.length; j++) {
+                if (value.items[i]?.toJSON() === value.items[j]?.toJSON() && !this.allowDupe && value.items[i]?.toJSON() !== null) {
+                    result.diagnostics.push({
+                        ...DIAGNOSTIC_DEFAULT,
+                        message: `Duplicate item in list.`,
+                        range: doc.convertToRange(value.items[j]!.range),
+                        code: "yaml-duplicate-item",
+                    });
+                }
             }
         }
         return result;
