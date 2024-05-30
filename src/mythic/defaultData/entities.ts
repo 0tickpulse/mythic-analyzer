@@ -1,4 +1,4 @@
-export const ENTITIES = new Set<string>([
+export const DEFAULT_ENTITIES = new Set<string>([
     "DROPPED_ITEM",
     "EXPERIENCE_ORB",
     "AREA_EFFECT_CLOUD",
