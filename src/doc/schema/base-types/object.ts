@@ -1,5 +1,7 @@
 import { isMap, isScalar } from "yaml";
+import { CompletionItemKind } from "vscode-languageserver";
 
+import type { CompletionItem } from "vscode-languageserver";
 import type { Pair, ParsedNode, YAMLMap } from "yaml";
 import type { MythicDoc } from "../../mythicdoc.js";
 import type { SchemaValueOrFn, Workspace } from "../../../index.js";
@@ -55,40 +57,58 @@ class SchemaObject extends Schema {
         );
         const submapped: Record<string, SchemaObjectProperty> = {};
         for (const [key, { schema }] of Object.entries(properties)) {
-            if (schema instanceof SchemaObject) {
-                const submappedProperties = schema.submapped(ws, doc, value);
-                for (const [subkey, subproperty] of Object.entries(
-                    submappedProperties,
-                )) {
-                    // before setting, check if the property already exists
-                    // submapped[`${key}.${subkey}`] = subproperty;
-                    const newKey = `${key}.${subkey}`;
-                    const split = newKey.split(".");
-                    let hasProperty = false,
-                        current: ParsedNode | null = value;
-                    for (const i of split) {
-                        if (!isMap(current)) {
-                            break;
-                        }
-
-                        const pair:
-                        | Pair<ParsedNode, ParsedNode | null>
-                        | undefined = current.items.find(
-                            (pair) => isScalar(pair.key) && pair.key.value === i,
-                        );
-                        if (!pair) {
-                            hasProperty = false;
-                            break;
-                        }
-
-                        current = pair.value;
-                        hasProperty = true;
+            if (!(schema instanceof SchemaObject)) {
+                continue;
+            }
+            const submappedProperties = schema.submapped(ws, doc, value);
+            for (const [subkey, subproperty] of Object.entries(
+                submappedProperties,
+            )) {
+                // before setting, check if the property already exists
+                // submapped[`${key}.${subkey}`] = subproperty;
+                const aliases
+                    = (subproperty.aliases
+                        && this.resolveObjectValueOrFn(
+                            ws,
+                            doc,
+                            value,
+                            value,
+                            subproperty.aliases,
+                        ))
+                    ?? [];
+                aliases.push(subkey);
+                const clonedProperty = { ...subproperty };
+                // for (const alias of aliases) {
+                const newKey = `${key}.${subkey}`;
+                const split = newKey.split(".");
+                let hasProperty = false,
+                    current: ParsedNode | null = value;
+                for (const i of split) {
+                    if (!isMap(current)) {
+                        break;
                     }
 
-                    if (!hasProperty) {
-                        submapped[`${key}.${subkey}`] = subproperty;
+                    const pair:
+                    | Pair<ParsedNode, ParsedNode | null>
+                    | undefined = current.items.find(
+                        (pair) => isScalar(pair.key) && pair.key.value === i,
+                    );
+                    if (!pair) {
+                        hasProperty = false;
+                        break;
                     }
+
+                    current = pair.value;
+                    hasProperty = true;
                 }
+
+                const newAliases = aliases.map((alias) => `${key}.${alias}`);
+                clonedProperty.aliases = newAliases;
+
+                if (!hasProperty) {
+                    submapped[`${key}.${subkey}`] = clonedProperty;
+                }
+                // }
             }
         }
 
@@ -192,6 +212,18 @@ class SchemaObject extends Schema {
                 if (description) {
                     hover += `\n\n${description}`;
                 }
+                const aliases = this.resolveObjectValueOrFn(
+                    ws,
+                    doc,
+                    pair.key,
+                    value,
+                    property.aliases,
+                );
+                if (aliases) {
+                    hover += `\n\nAliases: ${aliases
+                        .map((alias) => `\`${alias}\``)
+                        .join(", ")}`;
+                }
                 result.hovers.push({
                     range: doc.convertToRange(pair.key.range),
                     contents: hover,
@@ -210,7 +242,16 @@ class SchemaObject extends Schema {
         }
         for (const pair of value.items) {
             const key = pair.key;
-            if (!this.propertyIncludesKey(ws, doc, key, pair.value, properties, key.toString())) {
+            if (
+                !this.propertyIncludesKey(
+                    ws,
+                    doc,
+                    key,
+                    pair.value,
+                    properties,
+                    key.toString(),
+                )
+            ) {
                 const closestValue = closest(
                     key.toString(),
                     Object.keys(properties),
@@ -237,12 +278,45 @@ class SchemaObject extends Schema {
     ): ValidationResult {
         const result = super.fullProcess(ws, doc, value);
         if (!isMap(value)) {
+            const completionItems = Object.entries(
+                this.resolveValueOrFn(ws, doc, value, this.properties),
+            ).map(([key, property]) => {
+                return this.createCompletionItem(ws, doc, value, key, property);
+            });
+
+            let nextNonWhitespaceIdx = doc.source.length;
+            for (let i = value.range[1]; i < doc.source.length; i++) {
+                if (!/[\s\n]/.test(doc.source[i]!)) {
+                    nextNonWhitespaceIdx = i;
+                    break;
+                }
+            }
+
+            result.completionItems.push({
+                range: doc.convertToRange([
+                    value.range[0],
+                    Math.max(value.range[1], nextNonWhitespaceIdx),
+                    Math.max(value.range[1], nextNonWhitespaceIdx),
+                ]),
+                items: completionItems,
+            });
+
             return result;
         }
         const properties = this.submapped(ws, doc, value);
         for (const [key, property] of Object.entries(properties)) {
             const node = value.items.find(
-                (pair) => isScalar(pair.key) && pair.key.value === key,
+                (pair) => isScalar(pair.key)
+                    && (pair.key.value === key
+                        || (property.aliases
+                            ? this.resolveObjectValueOrFn(
+                                ws,
+                                doc,
+                                pair.key,
+                                value,
+                                property.aliases,
+                            )?.includes(pair.key.value as string)
+                            : false)),
             );
             if (!node?.value) {
                 continue;
@@ -256,7 +330,96 @@ class SchemaObject extends Schema {
             );
             result.merge(schema.fullProcess(ws, doc, node.value));
         }
+
+        const nonSubmappedProperties = this.resolveValueOrFn(
+            ws,
+            doc,
+            value,
+            this.properties,
+        );
+        const autoCompleteItems = Object.entries(nonSubmappedProperties)
+            .filter(
+                ([key]) => !this.valueHasProperty(ws, doc, value, key, properties),
+            )
+            .map(([propKey, propValue]) => {
+                return this.createCompletionItem(
+                    ws,
+                    doc,
+                    value,
+                    propKey,
+                    propValue,
+                );
+            });
+        let prevValue: ParsedNode | null = null;
+        for (const pair of value.items) {
+            const { key: pairKey, value: pairValue } = pair;
+
+            if (!prevValue) {
+                prevValue = pairValue;
+                continue;
+            }
+
+            const prevValueRange = doc.convertToRange(prevValue.range);
+            const keyRange = doc.convertToRange(pairKey.range);
+            const autocompleteRange = {
+                start: prevValueRange.end,
+                end: keyRange.end,
+            };
+
+            result.completionItems.push({
+                range: autocompleteRange,
+                items: autoCompleteItems,
+            });
+
+            prevValue = pairValue;
+        }
+
+        const lastValue = prevValue;
+        if (lastValue) {
+            let nextNonWhitespaceIdx = doc.source.length;
+            for (let i = lastValue.range[1]; i < doc.source.length; i++) {
+                if (!/[\s\n]/.test(doc.source[i]!)) {
+                    nextNonWhitespaceIdx = i;
+                    break;
+                }
+            }
+            const autocompleteRange = {
+                start: doc.convertToPosition(lastValue.range[1]),
+                end: doc.convertToPosition(
+                    Math.max(value.range[1], nextNonWhitespaceIdx),
+                ),
+            };
+            result.completionItems.push({
+                range: autocompleteRange,
+                items: autoCompleteItems,
+            });
+        }
+
+        ws.logger?.debug({
+            resultCompletionItems: result.completionItems,
+        });
+
         return result;
+    }
+
+    protected createCompletionItem(
+        ws: Workspace,
+        doc: MythicDoc,
+        value: ParsedNode,
+        key: string,
+        property: SchemaObjectProperty,
+    ): CompletionItem {
+        return {
+            label: key,
+            kind: CompletionItemKind.Property,
+            detail: this.resolveObjectValueOrFn(
+                ws,
+                doc,
+                value,
+                value,
+                property.description,
+            ),
+        };
     }
 
     /**
@@ -272,18 +435,41 @@ class SchemaObject extends Schema {
         return Boolean(
             value.items.find(
                 (pair) => isScalar(pair.key)
-                    && (pair.key.value === key || properties[key]?.aliases
-                        ? this.resolveObjectValueOrFn(
-                            ws,
-                            doc,
-                            pair.key,
-                            value,
-                            properties[key]?.aliases,
-                        )?.includes(pair.key.value as string)
-                        : false),
+                    && (pair.key.value === key
+                        || (properties[key]?.aliases
+                            ? this.resolveObjectValueOrFn(
+                                ws,
+                                doc,
+                                pair.key,
+                                value,
+                                properties[key]?.aliases,
+                            )?.includes(pair.key.value as string)
+                            : false)),
             ),
         );
     }
+
+    // protected getKeys(
+    //     ws: Workspace,
+    //     doc: MythicDoc,
+    //     value: ParsedNode,
+    //     pair: Pair<ParsedNode, ParsedNode | null>,
+    // ): string[] {
+    //     const key = pair.key;
+    //     let current: ParsedNode | null = value;
+    //     const keys = [];
+    //     while (isMap(current)) {
+    //         const pair = current.items.find(
+    //             (p) => isScalar(p.key) && p.key === key,
+    //         );
+    //         if (!pair) {
+    //             break;
+    //         }
+    //         keys.push(key.toString());
+    //         current = pair.value;
+    //     }
+    //     return keys;
+    // }
 
     protected propertyIncludesKey(
         ws: Workspace,
@@ -332,7 +518,7 @@ type SchemaObjectValueOrFn<T> = T extends (...args: unknown[]) => unknown
         ws: Workspace,
         doc: MythicDoc,
         key: ParsedNode,
-        value: ParsedNode | null,
+        value: ParsedNode | null
     ) => T);
 
 type SchemaObjectProperty = {
