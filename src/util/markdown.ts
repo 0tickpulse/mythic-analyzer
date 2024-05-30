@@ -3,7 +3,7 @@ function mdSeeAlso(...paths: string[]) {
 }
 
 function mdLinkWiki(path: string, text?: string) {
-    const linkText = text || `Wiki: ${path.replace(/-/g, " ")}`;
+    const linkText = text || `Wiki: ${path.replace(/-/gu, " ")}`;
     return `[🔗 ${linkText}](https://git.lumine.io/mythiccraft/MythicMobs/-/wikis/${path})`;
 }
 

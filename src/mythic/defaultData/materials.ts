@@ -1,4 +1,3 @@
-/* eslint-disable max-lines -- This is a data file of all materials in Minecraft. */
 export const MATERIALS = new Set<string>([
     "ACACIA_BOAT",
     "ACACIA_BUTTON",

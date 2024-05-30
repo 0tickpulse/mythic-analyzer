@@ -13,7 +13,12 @@ export function highlightYaml(ws: Workspace, doc: MythicDoc, yaml: ParsedNode) {
     visit(yaml, {
         Scalar: (key, node, path) => {
             result.highlights.unshift(
-                new Highlight(doc.convertToRange(node.range!), key === "key" ? SemanticTokenTypes.property : SemanticTokenTypes.string),
+                new Highlight(
+                    doc.convertToRange(node.range!),
+                    key === "key"
+                        ? SemanticTokenTypes.property
+                        : SemanticTokenTypes.string,
+                ),
             );
         },
     });

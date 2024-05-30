@@ -30,7 +30,7 @@ import { closest } from "../../../util/string.js";
 class SchemaObject extends Schema {
     public constructor(
         public readonly properties: SchemaValueOrFn<
-        Record<string, SchemaObjectProperty>
+            Record<string, SchemaObjectProperty>
         > = {},
     ) {
         super();
@@ -68,13 +68,13 @@ class SchemaObject extends Schema {
                 // submapped[`${key}.${subkey}`] = subproperty;
                 const aliases
                     = (subproperty.aliases
-                        && this.resolveObjectValueOrFn(
-                            ws,
-                            doc,
-                            value,
-                            value,
-                            subproperty.aliases,
-                        ))
+                    && this.resolveObjectValueOrFn(
+                        ws,
+                        doc,
+                        value,
+                        value,
+                        subproperty.aliases,
+                    ))
                     ?? [];
                 aliases.push(subkey);
                 const clonedProperty = { ...subproperty };
@@ -89,10 +89,10 @@ class SchemaObject extends Schema {
                     }
 
                     const pair:
-                    | Pair<ParsedNode, ParsedNode | null>
-                    | undefined = current.items.find(
-                        (pair) => isScalar(pair.key) && pair.key.value === i,
-                    );
+                        | Pair<ParsedNode, ParsedNode | null>
+                        | undefined = current.items.find(
+                            (pair) => isScalar(pair.key) && pair.key.value === i,
+                        );
                     if (!pair) {
                         hasProperty = false;
                         break;
@@ -154,16 +154,16 @@ class SchemaObject extends Schema {
         for (const [key, property] of Object.entries(properties)) {
             const pairs = value.items.filter(
                 (pair) => isScalar(pair.key)
-                    && (pair.key.value === key
-                        || (property.aliases
-                            ? this.resolveObjectValueOrFn(
-                                ws,
-                                doc,
-                                pair.key,
-                                value,
-                                property.aliases,
-                            )?.includes(pair.key.value as string)
-                            : false)),
+                && (pair.key.value === key
+                || (property.aliases
+                    ? this.resolveObjectValueOrFn(
+                        ws,
+                        doc,
+                        pair.key,
+                        value,
+                        property.aliases,
+                    )?.includes(pair.key.value as string)
+                    : false)),
             );
             if (pairs.length === 0) {
                 if (property.required && key.split(".").length === 1) {
@@ -286,7 +286,7 @@ class SchemaObject extends Schema {
 
             let nextNonWhitespaceIdx = doc.source.length;
             for (let i = value.range[1]; i < doc.source.length; i++) {
-                if (!/[\s\n]/.test(doc.source[i]!)) {
+                if (!/[\s\n]/u.test(doc.source[i]!)) {
                     nextNonWhitespaceIdx = i;
                     break;
                 }
@@ -307,16 +307,16 @@ class SchemaObject extends Schema {
         for (const [key, property] of Object.entries(properties)) {
             const node = value.items.find(
                 (pair) => isScalar(pair.key)
-                    && (pair.key.value === key
-                        || (property.aliases
-                            ? this.resolveObjectValueOrFn(
-                                ws,
-                                doc,
-                                pair.key,
-                                value,
-                                property.aliases,
-                            )?.includes(pair.key.value as string)
-                            : false)),
+                && (pair.key.value === key
+                || (property.aliases
+                    ? this.resolveObjectValueOrFn(
+                        ws,
+                        doc,
+                        pair.key,
+                        value,
+                        property.aliases,
+                    )?.includes(pair.key.value as string)
+                    : false)),
             );
             if (!node?.value) {
                 continue;
@@ -378,7 +378,7 @@ class SchemaObject extends Schema {
         if (lastValue) {
             let nextNonWhitespaceIdx = doc.source.length;
             for (let i = lastValue.range[1]; i < doc.source.length; i++) {
-                if (!/[\s\n]/.test(doc.source[i]!)) {
+                if (!/[\s\n]/u.test(doc.source[i]!)) {
                     nextNonWhitespaceIdx = i;
                     break;
                 }
@@ -435,16 +435,16 @@ class SchemaObject extends Schema {
         return Boolean(
             value.items.find(
                 (pair) => isScalar(pair.key)
-                    && (pair.key.value === key
-                        || (properties[key]?.aliases
-                            ? this.resolveObjectValueOrFn(
-                                ws,
-                                doc,
-                                pair.key,
-                                value,
-                                properties[key]?.aliases,
-                            )?.includes(pair.key.value as string)
-                            : false)),
+                && (pair.key.value === key
+                || (properties[key]?.aliases
+                    ? this.resolveObjectValueOrFn(
+                        ws,
+                        doc,
+                        pair.key,
+                        value,
+                        properties[key]?.aliases,
+                    )?.includes(pair.key.value as string)
+                    : false)),
             ),
         );
     }
@@ -483,15 +483,15 @@ class SchemaObject extends Schema {
         return Boolean(
             Object.keys(properties).find(
                 (propertyKey) => propertyKey === key
-                    || (properties[propertyKey]?.aliases
-                        ? this.resolveObjectValueOrFn(
-                            ws,
-                            doc,
-                            keyNode,
-                            valueNode,
-                            properties[propertyKey]?.aliases,
-                        )?.includes(key)
-                        : false),
+                || (properties[propertyKey]?.aliases
+                    ? this.resolveObjectValueOrFn(
+                        ws,
+                        doc,
+                        keyNode,
+                        valueNode,
+                        properties[propertyKey]?.aliases,
+                    )?.includes(key)
+                    : false),
             ),
         );
     }
@@ -513,13 +513,13 @@ class SchemaObject extends Schema {
 type SchemaObjectValueOrFn<T> = T extends (...args: unknown[]) => unknown
     ? never
     :
-    | T
-    | ((
-        ws: Workspace,
-        doc: MythicDoc,
-        key: ParsedNode,
-        value: ParsedNode | null
-    ) => T);
+        | T
+        | ((
+            ws: Workspace,
+            doc: MythicDoc,
+            key: ParsedNode,
+            value: ParsedNode | null
+        ) => T);
 
 type SchemaObjectProperty = {
     schema: SchemaObjectValueOrFn<Schema>;

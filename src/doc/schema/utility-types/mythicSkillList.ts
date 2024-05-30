@@ -97,11 +97,11 @@ export class MythicSkillList extends SchemaList {
                             start: doc.convertToPosition(componentOffset),
                             end: doc.convertToPosition(
                                 componentOffset
-                                    + LineConfig.createPos(
-                                        component,
-                                        component.length,
-                                        0,
-                                    ),
+                                + LineConfig.createPos(
+                                    component,
+                                    component.length,
+                                    0,
+                                ),
                             ),
                         },
                         code: "mythic-skill-too-many-targeters",
@@ -128,11 +128,11 @@ export class MythicSkillList extends SchemaList {
                             start: doc.convertToPosition(componentOffset),
                             end: doc.convertToPosition(
                                 componentOffset
-                                    + LineConfig.createPos(
-                                        component,
-                                        component.length,
-                                        0,
-                                    ),
+                                + LineConfig.createPos(
+                                    component,
+                                    component.length,
+                                    0,
+                                ),
                             ),
                         },
                         code: "mythic-skill-too-many-triggers",
@@ -146,11 +146,11 @@ export class MythicSkillList extends SchemaList {
                             start: doc.convertToPosition(componentOffset),
                             end: doc.convertToPosition(
                                 componentOffset
-                                    + LineConfig.createPos(
-                                        component,
-                                        component.length,
-                                        0,
-                                    ),
+                                + LineConfig.createPos(
+                                    component,
+                                    component.length,
+                                    0,
+                                ),
                             ),
                         },
                         code: "mythic-skill-triggers-not-allowed",
@@ -179,7 +179,7 @@ export class MythicSkillList extends SchemaList {
 
                     skillMechanic.conditions.push(condition);
                     result.merge(condition.result);
-                } else if (/^[-]?[0-9]*[.]?[0-9]+$/.test(component)) {
+                } else if (/^[-]?[0-9]*[.]?[0-9]+$/u.test(component)) {
                     if (skillMechanic.chanceToken) {
                         result.diagnostics.push({
                             ...DIAGNOSTIC_DEFAULT,
@@ -188,11 +188,11 @@ export class MythicSkillList extends SchemaList {
                                 start: doc.convertToPosition(componentOffset),
                                 end: doc.convertToPosition(
                                     componentOffset
-                                        + LineConfig.createPos(
-                                            component,
-                                            component.length,
-                                            0,
-                                        ),
+                                    + LineConfig.createPos(
+                                        component,
+                                        component.length,
+                                        0,
+                                    ),
                                 ),
                             },
                             code: "mythic-skill-too-many-chance-tokens",

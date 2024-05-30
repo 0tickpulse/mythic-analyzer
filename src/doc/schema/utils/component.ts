@@ -23,7 +23,7 @@ export function component<
         ws: Workspace,
         id: string,
         declarations: MythicComponentDeclaration<
-        Pair<ParsedNode, ParsedNode | null>
+            Pair<ParsedNode, ParsedNode | null>
         >[]
     ) => TComponent,
     componentType: TType,
@@ -69,9 +69,10 @@ export function component<
                     .mergedValidationResult()
                     .mythic[componentType].find((c) => c.id === id);
                 if (existingComponent) {
-                    existingComponent.declarations = existingComponent.declarations.filter(
-                        (d) => d.doc !== doc,
-                    );
+                    existingComponent.declarations
+                        = existingComponent.declarations.filter(
+                            (d) => d.doc !== doc,
+                        );
                 }
             }
 

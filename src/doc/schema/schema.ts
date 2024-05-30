@@ -99,7 +99,7 @@ class Schema {
     /**
      * Any further processes that should be run on the value before partial processing.
      */
-    #partialProcesses: ((
+    readonly #partialProcesses: ((
         ws: Workspace,
         doc: MythicDoc,
         value: ParsedNode,
@@ -109,7 +109,7 @@ class Schema {
     /**
      * Any further processes that should be run on the value before full processing.
      */
-    #fullProcesses: ((
+    readonly #fullProcesses: ((
         ws: Workspace,
         doc: MythicDoc,
         value: ParsedNode,

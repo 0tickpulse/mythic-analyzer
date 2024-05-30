@@ -26,32 +26,36 @@ export const MYTHIC_MOB_SCHEMA: SchemaMap = new SchemaMap(
             ${mdSeeAlso("Mobs/Templates")}`,
         },
         Exclude: {
-            schema: new SchemaList(new SchemaString(() => {
-                const properties = MYTHIC_MOB_SCHEMA.properties;
-                if (typeof properties !== "function") {
-                    return []; // This should never happen
-                }
-                const propertyMap = properties(ws, doc, value);
-                const property = Object.values(propertyMap)[0];
-                if (!property) {
-                    return [];
-                }
-                const schemaObject = property.schema;
-                if (!(schemaObject instanceof SchemaObject)) {
-                    return [];
-                }
-                const objectProperties = schemaObject.properties;
-                if (typeof objectProperties !== "function") {
-                    return [];
-                }
-                return Object.keys(objectProperties(ws, doc, value)).map(key => ({
-                    matcher: key,
-                    completionItem: {
-                        label: key,
-                        kind: CompletionItemKind.Property,
-                    },
-                }));
-            })),
+            schema: new SchemaList(
+                new SchemaString(() => {
+                    const properties = MYTHIC_MOB_SCHEMA.properties;
+                    if (typeof properties !== "function") {
+                        return []; // This should never happen
+                    }
+                    const propertyMap = properties(ws, doc, value);
+                    const property = Object.values(propertyMap)[0];
+                    if (!property) {
+                        return [];
+                    }
+                    const schemaObject = property.schema;
+                    if (!(schemaObject instanceof SchemaObject)) {
+                        return [];
+                    }
+                    const objectProperties = schemaObject.properties;
+                    if (typeof objectProperties !== "function") {
+                        return [];
+                    }
+                    return Object.keys(objectProperties(ws, doc, value)).map(
+                        (key) => ({
+                            matcher: key,
+                            completionItem: {
+                                label: key,
+                                kind: CompletionItemKind.Property,
+                            },
+                        }),
+                    );
+                }),
+            ),
             description: `Excludes unwanted inherited properties from the template.
 
             ${mdSeeAlso("Mobs/Templates")}`,
@@ -176,9 +180,11 @@ ${mdSeeAlso("Mobs/Mobs#bossbar")}`,
         Faction: {
             schema: new SchemaString(),
             description: `Sets the mob's faction, which can be used for advanced ${mdLinkWiki(
-                "Mobs/Custom-AI", "Custom AI",
+                "Mobs/Custom-AI",
+                "Custom AI",
             )}}) configurations or ${mdLinkWiki(
-                "Skills/Targeters#targeter-option", "targeter filtering",
+                "Skills/Targeters#targeter-option",
+                "targeter filtering",
             )}}).
             Faction is case-sensitive, so be careful when using faction conditions.
 
@@ -259,7 +265,8 @@ ${mdSeeAlso("Mobs/Mobs#bossbar")}`,
             description: `This is a special field which comes with numerous sub-options, like determining if the mob should despawn,
             setting knockback resistance, follow range, movement speed and many more.
             A list of available mob options can be found in the ${mdLinkWiki(
-            "Mobs/Options", "Mob Options",
+            "Mobs/Options",
+            "Mob Options",
         )}}) page.
 
             ${mdSeeAlso("Mobs/Mobs#options")}`,
@@ -268,12 +275,18 @@ ${mdSeeAlso("Mobs/Mobs#bossbar")}`,
             schema: new SchemaObject({
                 ThreatTables: {
                     schema: new SchemaBool(),
-                    description: `Enables or disables ${mdLinkWiki("Mobs/ThreatTables", "Threat Tables")} for the mob.`,
+                    description: `Enables or disables ${mdLinkWiki(
+                        "Mobs/ThreatTables",
+                        "Threat Tables",
+                    )} for the mob.`,
                     aliases: ["ThreatTable"],
                 },
                 ImmunityTables: {
                     schema: new SchemaBool(),
-                    description: `Enables or disables ${mdLinkWiki("Mobs/ImmunityTables", "Immunity Tables")} for the mob.`,
+                    description: `Enables or disables ${mdLinkWiki(
+                        "Mobs/ImmunityTables",
+                        "Immunity Tables",
+                    )} for the mob.`,
                 },
             }),
             description: `This field allows you to enable or disable modules, like ${mdLinkWiki(
@@ -284,13 +297,19 @@ ${mdSeeAlso("Mobs/Mobs#bossbar")}`,
         },
         AIGoalSelectors: {
             schema: new SchemaList(new SchemaString()),
-            description: `Modifies and customizes the ${mdLinkWiki("Mobs/Custom-AI#ai-goal-selectors", "AI goals")} of the mob.
+            description: `Modifies and customizes the ${mdLinkWiki(
+                "Mobs/Custom-AI#ai-goal-selectors",
+                "AI goals",
+            )} of the mob.
 
             ${mdSeeAlso("Mobs/Mobs#aigoalselectors")}`,
         },
         AITargetSelectors: {
             schema: new SchemaList(new SchemaString()),
-            description: `Modifies and customizes the ${mdLinkWiki("Mobs/Custom-AI#ai-target-selectors", "AI targets")} of the mob.
+            description: `Modifies and customizes the ${mdLinkWiki(
+                "Mobs/Custom-AI#ai-target-selectors",
+                "AI targets",
+            )} of the mob.
 
             ${mdSeeAlso("Mobs/Mobs#aitargetselectors")}`,
         },
@@ -319,19 +338,36 @@ ${mdSeeAlso("Mobs/Mobs#bossbar")}`,
         },
         KillMessages: {
             schema: new SchemaList(new SchemaString()),
-            description: `Customize the ${mdLinkWiki("Mobs/KillMessages", "kill messages")} that appears when the mob kills a player.
+            description: `Customize the ${mdLinkWiki(
+                "Mobs/KillMessages",
+                "kill messages",
+            )} that appears when the mob kills a player.
 
             ${mdSeeAlso("Mobs/Mobs#killmessages")}`,
         },
         LevelModifiers: {
-            schema: new SchemaObject(Object.fromEntries(["Health", "Damage", "KnockbackResistance", "Power", "Armor", "MovementSpeed"].map((key) => [
-                key,
-                {
-                    schema: new SchemaNumber(0),
-                    description: `Sets the \`${key}\` statistic the mob will gain per level.`,
-                },
-            ]))),
-            description: `MythicMobs can have ${mdLinkWiki("Mobs/Levels", "levels")} and this field is used to determine which kinds of statistics they should gain on when their levels change.
+            schema: new SchemaObject(
+                Object.fromEntries(
+                    [
+                        "Health",
+                        "Damage",
+                        "KnockbackResistance",
+                        "Power",
+                        "Armor",
+                        "MovementSpeed",
+                    ].map((key) => [
+                        key,
+                        {
+                            schema: new SchemaNumber(0),
+                            description: `Sets the \`${key}\` statistic the mob will gain per level.`,
+                        },
+                    ]),
+                ),
+            ),
+            description: `MythicMobs can have ${mdLinkWiki(
+                "Mobs/Levels",
+                "levels",
+            )} and this field is used to determine which kinds of statistics they should gain on when their levels change.
 
             ${mdSeeAlso("Mobs/Mobs#levelmodifiers")}`,
         },
@@ -347,7 +383,9 @@ ${mdSeeAlso("Mobs/Mobs#bossbar")}`,
             schema: new MythicSkillList(),
             description: `Skills are an integral feature of Mythic. All mobs are able to have skills of various types that can be triggered under different circumstances with varying
             conditions. The Mythic skill system is quite intuitive once you get used to it, and can be used to create anything from simple mobs to incredibly complex bosses.
-            See ${mdLinkWiki("Skills/Skills")} to get started on making your own skills.
+            See ${mdLinkWiki(
+            "Skills/Skills",
+        )} to get started on making your own skills.
 
             ${mdSeeAlso("Mobs/Mobs#skills")}`,
         },
@@ -376,13 +414,19 @@ ${mdSeeAlso("Mobs/Mobs#bossbar")}`,
                 },
             }),
             description: `Allows the mob to "hear" sounds like a warden would.
-            Turning this on enables the new ${mdLinkWiki("Skills/Triggers#onhear", "`~onHear`")} trigger.
+            Turning this on enables the new ${mdLinkWiki(
+            "Skills/Triggers#onhear",
+            "`~onHear`",
+        )} trigger.
 
             ${mdSeeAlso("Mobs/Mobs#hearing")}`,
         },
         Variables: {
             schema: new SchemaMap(),
-            description: `Instead of using a lot of \`setvariable\` mechanics \`~onSpawn\`, you can make a mob spawn with already set ${mdLinkWiki("Skills/Variables", "variables")} via the use the of Variables mob field.
+            description: `Instead of using a lot of \`setvariable\` mechanics \`~onSpawn\`, you can make a mob spawn with already set ${mdLinkWiki(
+                "Skills/Variables",
+                "variables",
+            )} via the use the of Variables mob field.
 
             ${mdSeeAlso("Mobs/Mobs#variables")}`,
         },
@@ -431,7 +475,7 @@ ${mdSeeAlso("Mobs/Mobs#bossbar")}`,
             ) {
                 const displayOptions = value.items.find(
                     (pair) => isScalar(pair.key)
-                        && pair.key.value === "DisplayOptions",
+                    && pair.key.value === "DisplayOptions",
                 );
 
                 if (displayOptions) {

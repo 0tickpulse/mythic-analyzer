@@ -221,12 +221,12 @@ class LineConfig {
                                 ),
                                 LineConfig.createPos(
                                     parsed,
-                                    start + key.length + value.length + 2,
+                                    start + key.length + value.length + 1 + 1,
                                     this.offset,
                                 ),
                                 LineConfig.createPos(
                                     parsed,
-                                    start + key.length + value.length + 2,
+                                    start + key.length + value.length + 1 + 1,
                                     this.offset,
                                 ),
                             ]);
@@ -409,8 +409,8 @@ class LineConfig {
                     );
                     const blockContent = modifiedString
                         .substring(startCurlyBraceIndex, position)
-                        .replace(/ /g, "<&csp>")
-                        .replace(/-/g, "<&da>");
+                        .replace(/ /gu, "<&csp>")
+                        .replace(/-/gu, "<&da>");
                     // const afterBlock = modifiedString.substring(position);
 
                     parsedString += beforeBlock + blockContent;
@@ -464,23 +464,23 @@ class LineConfig {
 
     public static unparseSpecialChars(input: string): string {
         return input
-            .replace(/-/g, "<&da>")
-            .replace(/\\/g, "<&bs>")
-            .replace(/\//g, "<&fs>")
-            .replace(/ /g, "<&sp>")
-            .replace(/,/g, "<&cm>")
-            .replace(/;/g, "<&sc>")
-            .replace(/=/g, "<&eq>")
-            .replace(/{/g, "<&lc>")
-            .replace(/}/g, "<&rc>")
-            .replace(/\[/g, "<&lb>")
-            .replace(/\]/g, "<&rb>")
-            .replace(/'/g, "<&sq>");
+            .replace(/-/gu, "<&da>")
+            .replace(/\\/gu, "<&bs>")
+            .replace(/\//gu, "<&fs>")
+            .replace(/ /gu, "<&sp>")
+            .replace(/,/gu, "<&cm>")
+            .replace(/;/gu, "<&sc>")
+            .replace(/=/gu, "<&eq>")
+            .replace(/\{/gu, "<&lc>")
+            .replace(/\}/gu, "<&rc>")
+            .replace(/\[/gu, "<&lb>")
+            .replace(/\]/gu, "<&rb>")
+            .replace(/'/gu, "<&sq>");
     }
 
     public static parseString(input: string): string {
         return input
-            .replace(/<&csp>/g, " ")
+            .replace(/<&csp>/gu, " ")
             .replace("<&da>", "-")
             .trim();
     }

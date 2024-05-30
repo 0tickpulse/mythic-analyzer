@@ -249,7 +249,7 @@ class Workspace {
                     uri: change.document.uri,
                     diagnostics: [],
                 })
-                .catch((err) => {
+                .catch((err: unknown) => {
                     this.logger?.error(
                         `Failed to send diagnostics for ${
                             change.document.uri
@@ -268,7 +268,7 @@ class Workspace {
                     uri: change.document.uri,
                     diagnostics: diags ?? [],
                 })
-                .catch((err) => {
+                .catch((err: unknown) => {
                     this.logger?.error(
                         `Failed to send diagnostics for ${
                             change.document.uri
@@ -301,8 +301,8 @@ class Workspace {
 }
 
 if (require.main === module) {
-    main().catch((err) => {
-        process.stderr.write((err as unknown as Error).stack!);
+    main().catch((err: unknown) => {
+        process.stderr.write((err as Error).stack!);
     });
 }
 
