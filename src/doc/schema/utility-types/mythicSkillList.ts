@@ -12,6 +12,7 @@ import { SkillMechanic } from "../../../mythicskills/skillmechanic.js";
 import { nodePreciseSource } from "../../../util/yamlNodes.js";
 import { SchemaList } from "../base-types/list.js";
 import { SkillCondition } from "../../../mythicskills/skillcondition.js";
+import { equalsIgnoreCase } from "../../../util/string.js";
 
 export class MythicSkillList extends SchemaList {
     public constructor(public supportsTriggers = true) {
@@ -209,7 +210,7 @@ export class MythicSkillList extends SchemaList {
                     skillMechanic.chanceToken.addHighlight(ws, doc, result, SemanticTokenTypes.number);
 
                     // Check if the mechanic matches 'delay' and chance is on the first component
-                    const isDelay = mech === "delay" && i === 0;
+                    const isDelay = equalsIgnoreCase(mech, "delay") && i === 1;
 
                     const chance = parseFloat(component);
                     if ((chance < 0 || chance > 1) && !isDelay) {
