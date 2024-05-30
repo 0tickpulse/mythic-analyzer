@@ -85,7 +85,7 @@ export class MythicSkillList extends SchemaList {
         const skillMechanic = new SkillMechanic(source, skillConfig);
 
         let componentOffset = idxOffset;
-        for (const component of split) {
+        for (const [i, component] of split.entries()) {
             const adjustedOffset = LineConfig.createPos(source, componentOffset - idxOffset, idxOffset);
             if (component.startsWith("@")) {
                 if (skillMechanic.targeter) {
@@ -208,8 +208,11 @@ export class MythicSkillList extends SchemaList {
                     );
                     skillMechanic.chanceToken.addHighlight(ws, doc, result, SemanticTokenTypes.number);
 
+                    // Check if the mechanic matches 'delay' and chance is on the first component
+                    const isDelay = mech === "delay" && i === 0;
+
                     const chance = parseFloat(component);
-                    if (chance < 0 || chance > 1) {
+                    if ((chance < 0 || chance > 1) && !isDelay) {
                         result.diagnostics.push({
                             ...DIAGNOSTIC_DEFAULT,
                             message: `Chance must be between 0 and 1!`,
