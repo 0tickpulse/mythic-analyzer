@@ -12,6 +12,11 @@ class LineToken {
         public readonly value: string,
         public readonly range: [number, number, number],
     ) {}
+
+    public addHighlight(ws: Workspace, doc: MythicDoc, result: ValidationResult, color: SemanticTokenTypes): void {
+        const hl = new Highlight(doc.convertToRange(this.range), color);
+        result.highlights.unshift(hl);
+    }
 }
 
 class ConfigValue {
@@ -57,9 +62,12 @@ class LineConfig {
         if (parsed.includes("{") && parsed.includes("}")) {
             const openBraceIndex = parsed.indexOf("{");
             this.main = new LineToken(parsed.substring(0, openBraceIndex), [
-                this.offset,
-                openBraceIndex + this.offset,
-                openBraceIndex + this.offset,
+                // this.offset,
+                // openBraceIndex + this.offset,
+                // openBraceIndex + this.offset,
+                LineConfig.createPos(parsed, 0, this.offset),
+                LineConfig.createPos(parsed, openBraceIndex, this.offset),
+                LineConfig.createPos(parsed, openBraceIndex, this.offset),
             ]);
 
             const closeBraceIndex = parsed.lastIndexOf("}");
@@ -68,14 +76,20 @@ class LineConfig {
             parsed = parsed.substring(openBraceIndex + 1, closeBraceIndex);
 
             this.openBraceToken = new LineToken("{", [
-                openBraceIndex + this.offset,
-                openBraceIndex + 1 + this.offset,
-                openBraceIndex + 1 + this.offset,
+                // openBraceIndex + this.offset,
+                // openBraceIndex + 1 + this.offset,
+                // openBraceIndex + 1 + this.offset,
+                LineConfig.createPos(parsed, openBraceIndex + 0, this.offset),
+                LineConfig.createPos(parsed, openBraceIndex + 1, this.offset),
+                LineConfig.createPos(parsed, openBraceIndex + 1, this.offset),
             ]);
             this.closeBraceToken = new LineToken("}", [
-                closeBraceIndex + this.offset,
-                closeBraceIndex + 1 + this.offset,
-                closeBraceIndex + 1 + this.offset,
+                // closeBraceIndex + this.offset,
+                // closeBraceIndex + 1 + this.offset,
+                // closeBraceIndex + 1 + this.offset,
+                LineConfig.createPos(parsed, closeBraceIndex + 0, this.offset),
+                LineConfig.createPos(parsed, closeBraceIndex + 1, this.offset),
+                LineConfig.createPos(parsed, closeBraceIndex + 1, this.offset),
             ]);
 
             this.offset += openBraceIndex + 1;
@@ -96,9 +110,12 @@ class LineConfig {
                     ...DIAGNOSTIC_DEFAULT,
                     message: "Mismatched braces!",
                     range: doc.convertToRange([
-                        openBraceIndex + this.offset,
-                        closeBraceIndex + this.offset,
-                        closeBraceIndex + this.offset,
+                        // openBraceIndex + this.offset,
+                        // closeBraceIndex + this.offset,
+                        // closeBraceIndex + this.offset,
+                        LineConfig.createPos(parsed, openBraceIndex, this.offset),
+                        LineConfig.createPos(parsed, closeBraceIndex, this.offset),
+                        LineConfig.createPos(parsed, closeBraceIndex, this.offset),
                     ]),
                     code: "lineconfig-mismatched-braces",
                 });
@@ -312,53 +329,24 @@ class LineConfig {
     }
 
     public addHighlights(ws: Workspace, doc: MythicDoc): this {
-        this.openBraceToken
-            && this.result.highlights.unshift(
-                new Highlight(
-                    doc.convertToRange(this.openBraceToken.range),
-                    SemanticTokenTypes.operator,
-                ),
-            );
-        this.closeBraceToken
-            && this.result.highlights.unshift(
-                new Highlight(
-                    doc.convertToRange(this.closeBraceToken.range),
-                    SemanticTokenTypes.operator,
-                ),
-            );
+        this.openBraceToken?.addHighlight(ws, doc, this.result, SemanticTokenTypes.operator);
+        this.closeBraceToken?.addHighlight(ws, doc, this.result, SemanticTokenTypes.operator);
 
         for (const { key, value, equals, semicolon } of this.config) {
-            this.result.highlights.unshift(
-                new Highlight(
-                    doc.convertToRange(key.range),
-                    SemanticTokenTypes.property,
-                ),
-            );
-            this.result.highlights.unshift(
-                new Highlight(
-                    doc.convertToRange(equals.range),
-                    SemanticTokenTypes.operator,
-                ),
-            );
+            key.addHighlight(ws, doc, this.result, SemanticTokenTypes.property);
+            equals.addHighlight(ws, doc, this.result, SemanticTokenTypes.operator);
 
             const num = Number(value.value);
-            this.result.highlights.unshift(
-                new Highlight(
-                    doc.convertToRange(value.range),
-                    isNaN(num)
-                        ? SemanticTokenTypes.string
-                        : SemanticTokenTypes.number,
-                ),
+            value.addHighlight(
+                ws,
+                doc,
+                this.result,
+                isNaN(num)
+                    ? SemanticTokenTypes.string
+                    : SemanticTokenTypes.number,
             );
 
-            if (semicolon) {
-                this.result.highlights.unshift(
-                    new Highlight(
-                        doc.convertToRange(semicolon.range),
-                        SemanticTokenTypes.operator,
-                    ),
-                );
-            }
+            semicolon?.addHighlight(ws, doc, this.result, SemanticTokenTypes.operator);
         }
 
         return this;
