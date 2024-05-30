@@ -182,6 +182,11 @@ export class SchemaString extends Schema {
             arr.map((s) => s.toLowerCase()),
         );
     }
+
+    public setHighlight(highlight: SemanticTokenTypes): this {
+        this.highlight = highlight;
+        return this;
+    }
 }
 
 export type SchemaStringCompletable = {
