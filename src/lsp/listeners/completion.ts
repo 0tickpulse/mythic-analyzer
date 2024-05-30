@@ -16,7 +16,15 @@ export function completionHandler(workspace: Workspace) {
             );
             return [];
         }
-        const completionsInRange = completions.filter((completion) => posIsIn(params.position, completion.range));
+        const completionsInRange = completions.filter((completion) => {
+            // workspace.logger?.log(
+            //     `Checking if completion ${completion.items.map((item) => item.label).slice(0, 5).join(", ")}... with range ${JSON.stringify(completion.range)} is in position ${JSON.stringify(params.position)}.`,
+            // );
+            // const res = posIsIn(params.position, completion.range);
+            // workspace.logger?.log(`Result: ${String(res)}`);
+            // return res;
+            return posIsIn(params.position, completion.range);
+        });
         workspace.logger?.log(
             `[RESPONSE] Completion, ${params.textDocument.uri}, ${completions.length} completions found, ${completionsInRange.length} in range.`,
         );
