@@ -15,8 +15,12 @@ export function initializeHandler(workspace: Workspace) {
         workspace.logger?.log(
             `Loaded ${workspace.docs.size} files. Processing...`,
         );
-        for (const doc of workspace.docs.values()) {
-            doc.partialProcess(workspace);
+        try {
+            for (const doc of workspace.docs.values()) {
+                doc.partialProcess(workspace);
+            }
+        } catch (e: unknown) {
+            workspace.logger?.error(e);
         }
 
         return {
