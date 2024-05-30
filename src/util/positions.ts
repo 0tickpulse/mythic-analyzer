@@ -9,6 +9,15 @@ import type { Position, Range } from "vscode-languageserver";
  * @param range The range to check.
  */
 function posIsIn(pos: Position, range: Range) {
+    if (pos.line > range.start.line && pos.line < range.end.line) {
+        return true;
+    }
+    if (pos.line === range.start.line && pos.character >= range.start.character) {
+        return true;
+    }
+    if (pos.line === range.end.line && pos.character <= range.end.character) {
+        return true;
+    }
     return (
         pos.line >= range.start.line
         && pos.line <= range.end.line
