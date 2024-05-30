@@ -186,7 +186,7 @@ class Schema {
      * @param value      The value to resolve the value in.
      * @param valueOrFns The values or functions to resolve.
      */
-    protected resolveValuesOrFns<TTypes extends readonly unknown[]>(
+    public static resolveValuesOrFns<TTypes extends readonly unknown[]>(
         ws: Workspace,
         doc: MythicDoc,
         value: ParsedNode,
