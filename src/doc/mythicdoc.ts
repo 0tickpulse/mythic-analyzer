@@ -59,7 +59,10 @@ export class MythicDoc {
      * @returns A {@link Promise} that resolves to the new MythicDoc.
      */
     public static async fromFilePath(path: PathLike): Promise<Result<MythicDoc, string>> {
-        const source = await readFile(path, "utf-8");
+        let source;
+        try {
+            source = await readFile(path, "utf-8");
+        } catch {} // Ignored
         if (!source) {
             // eslint-disable-next-line new-cap -- this is a static method. I presume this library uses 'Result.Err' with caps E because of how Rust does it.
             return Result.Err(`Failed to read file at ${path.toString()}.`);
