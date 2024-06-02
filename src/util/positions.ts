@@ -12,11 +12,11 @@ function posIsIn(pos: Position, range: Range) {
     if (pos.line > range.start.line && pos.line < range.end.line) {
         return true;
     }
-    if (pos.line === range.start.line && pos.character >= range.start.character) {
-        return true;
+    if (pos.line === range.start.line && pos.line === range.end.line) {
+        return pos.character >= range.start.character && pos.character <= range.end.character;
     }
-    if (pos.line === range.end.line && pos.character <= range.end.character) {
-        return true;
+    if (pos.line === range.start.line) {
+        return pos.character >= range.start.character;
     }
     return (
         pos.line >= range.start.line
