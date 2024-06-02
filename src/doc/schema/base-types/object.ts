@@ -1,4 +1,4 @@
-import { isMap, isScalar } from "yaml";
+import { isMap, isPair, isScalar } from "yaml";
 import { CompletionItemKind } from "vscode-languageserver";
 
 import type { CompletionItem } from "vscode-languageserver";
@@ -152,19 +152,18 @@ class SchemaObject extends Schema {
         const properties = this.submapped(ws, doc, value);
 
         for (const [key, property] of Object.entries(properties)) {
-            const pairs = value.items.filter(
-                (pair) => isScalar(pair.key)
-                && (pair.key.value === key
-                || (property.aliases
-                    ? this.resolveObjectValueOrFn(
-                        ws,
-                        doc,
-                        pair.key,
-                        value,
-                        property.aliases,
-                    )?.includes(pair.key.value as string)
-                    : false)),
-            );
+            const aliases
+                = this.resolveObjectValueOrFn(
+                    ws,
+                    doc,
+                    value,
+                    value,
+                    property.aliases,
+                ) ?? [];
+            aliases.push(key);
+            const pairs = value.items
+                .map((pair) => this.nodeHasProperty(ws, doc, pair, aliases))
+                .filter(Boolean) as Pair<ParsedNode, ParsedNode | null>[];
             if (pairs.length === 0) {
                 if (property.required && key.split(".").length === 1) {
                     // only check for top-level properties
@@ -338,9 +337,7 @@ class SchemaObject extends Schema {
             this.properties,
         );
         const autoCompleteItems = Object.entries(nonSubmappedProperties)
-            .filter(
-                ([key]) => !this.valueHasProperty(ws, doc, value, key, properties),
-            )
+            .filter(([key]) => !this.nodeHasProperty(ws, doc, value, [key]))
             .map(([propKey, propValue]) => {
                 return this.createCompletionItem(
                     ws,
@@ -395,10 +392,6 @@ class SchemaObject extends Schema {
             });
         }
 
-        ws.logger?.debug({
-            resultCompletionItems: result.completionItems,
-        });
-
         return result;
     }
 
@@ -425,51 +418,71 @@ class SchemaObject extends Schema {
     /**
      * Respects property aliases.
      */
-    protected valueHasProperty(
+    protected nodeHasProperty(
         ws: Workspace,
         doc: MythicDoc,
-        value: YAMLMap.Parsed,
-        key: string,
-        properties: Record<string, SchemaObjectProperty>,
-    ): boolean {
-        return Boolean(
-            value.items.find(
-                (pair) => isScalar(pair.key)
-                && (pair.key.value === key
-                || (properties[key]?.aliases
-                    ? this.resolveObjectValueOrFn(
-                        ws,
-                        doc,
-                        pair.key,
-                        value,
-                        properties[key]?.aliases,
-                    )?.includes(pair.key.value as string)
-                    : false)),
-            ),
+        node: YAMLMap.Parsed | Pair<ParsedNode, ParsedNode | null>,
+        aliases: string[],
+    ): Pair<ParsedNode, ParsedNode | null> | null {
+        return (
+            aliases
+                .map((alias) => this.findValueKey(ws, doc, node, alias))
+                .find(Boolean) ?? null
         );
     }
 
-    // protected getKeys(
-    //     ws: Workspace,
-    //     doc: MythicDoc,
-    //     value: ParsedNode,
-    //     pair: Pair<ParsedNode, ParsedNode | null>,
-    // ): string[] {
-    //     const key = pair.key;
-    //     let current: ParsedNode | null = value;
-    //     const keys = [];
-    //     while (isMap(current)) {
-    //         const pair = current.items.find(
-    //             (p) => isScalar(p.key) && p.key === key,
-    //         );
-    //         if (!pair) {
-    //             break;
-    //         }
-    //         keys.push(key.toString());
-    //         current = pair.value;
-    //     }
-    //     return keys;
-    // }
+    /**
+     * This respects submapping; for example, if you have a property `A.B` and a submapping `A: { B: ... }`,
+     * this will return true for both `A.B` and `A: { B: ... }`.
+     * This is done through recursion:
+     *
+     * 1. Check if the value has a key that matches the literal `A.B.C`.
+     * 2. If not, check if the value has a key that matches `A` or `A.B`.
+     * 3. Gets the value of `A` or `A.B` and repeats the process.
+     */
+    protected findValueKey(
+        ws: Workspace,
+        doc: MythicDoc,
+        node: YAMLMap.Parsed | Pair<ParsedNode, ParsedNode | null>,
+        key: string,
+    ): Pair<ParsedNode, ParsedNode | null> | null {
+        let foundValue = isMap(node)
+            ? node.items.find(
+                (pair) => isScalar(pair.key) && pair.key.value === key,
+            )
+            : node;
+        if (isPair(foundValue) && String(foundValue.key) !== key) {
+            foundValue = undefined;
+        }
+
+        if (foundValue) {
+            return foundValue;
+        }
+        const split = key.split(".");
+        for (const [i, _part] of split.entries()) {
+            const subkey = split.slice(0, i + 1).join(".");
+            const pair = isMap(node)
+                ? node.items.find(
+                    (pair) => isScalar(pair.key) && pair.key.value === subkey,
+                )
+                : node;
+            if (!pair) {
+                return null;
+            }
+            if (isPair(pair) && String(pair.key) !== subkey) {
+                return null;
+            }
+            if (!pair.value || !isMap(pair.value)) {
+                return null;
+            }
+            const rest = split.slice(i + 1).join(".");
+            const foundValue = this.findValueKey(ws, doc, pair.value, rest);
+            if (foundValue) {
+                return foundValue;
+            }
+        }
+        return null;
+    }
 
     protected propertyIncludesKey(
         ws: Workspace,
