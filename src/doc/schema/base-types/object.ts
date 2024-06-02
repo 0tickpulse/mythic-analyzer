@@ -304,19 +304,27 @@ class SchemaObject extends Schema {
         }
         const properties = this.submapped(ws, doc, value);
         for (const [key, property] of Object.entries(properties)) {
-            const node = value.items.find(
-                (pair) => isScalar(pair.key)
-                && (pair.key.value === key
-                || (property.aliases
-                    ? this.resolveObjectValueOrFn(
-                        ws,
-                        doc,
-                        pair.key,
-                        value,
-                        property.aliases,
-                    )?.includes(pair.key.value as string)
-                    : false)),
+            // const node = value.items.find(
+            //     (pair) => isScalar(pair.key)
+            //     && (pair.key.value === key
+            //     || (property.aliases
+            //         ? this.resolveObjectValueOrFn(
+            //             ws,
+            //             doc,
+            //             pair.key,
+            //             value,
+            //             property.aliases,
+            //         )?.includes(pair.key.value as string)
+            //         : false)),
+            // );
+            const aliases = this.resolveObjectValueOrFn(
+                ws,
+                doc,
+                value,
+                value,
+                property.aliases,
             );
+            const node = this.nodeHasProperty(ws, doc, value, aliases ?? [key]);
             if (!node?.value) {
                 continue;
             }
