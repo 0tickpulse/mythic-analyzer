@@ -10,17 +10,19 @@ export function initializeHandler(workspace: Workspace) {
         workspace.logger?.log(
             "LSP connection initialized. Loading all files...",
         );
-        const uri = URI.parse(params.workspaceFolders![0]!.uri);
-        await workspace.loadFolder(uri.fsPath);
-        workspace.logger?.log(
-            `Loaded ${workspace.docs.size} files. Processing...`,
-        );
-        try {
-            for (const doc of workspace.docs.values()) {
-                doc.partialProcess(workspace);
+        if ((params.workspaceFolders?.length ?? 0) > 0) {
+            const uri = URI.parse(params.workspaceFolders![0]!.uri);
+            await workspace.loadFolder(uri.fsPath);
+            workspace.logger?.log(
+                `Loaded ${workspace.docs.size} files. Processing...`,
+            );
+            try {
+                for (const doc of workspace.docs.values()) {
+                    doc.partialProcess(workspace);
+                }
+            } catch (e: unknown) {
+                workspace.logger?.error(e);
             }
-        } catch (e: unknown) {
-            workspace.logger?.error(e);
         }
 
         return {
