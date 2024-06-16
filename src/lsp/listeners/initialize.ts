@@ -38,7 +38,7 @@ export function initializeHandler(workspace: Workspace) {
                 },
                 definitionProvider: true,
                 completionProvider: {
-                    triggerCharacters: ["-", " "],
+                    triggerCharacters: ["-", " ", "\n"],
                 },
             },
         };
