@@ -7,6 +7,92 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Added
+
+- Implemented the new `Logger#debug` method for `STDOUT_LOGGER`.
+- Added the `RangedCompletionItems` type:
+
+    ```ts
+    type RangedCompletionItems = {
+        range: Range;
+        // pos: Position;
+        items: CompletionItem[];
+        conditions?: (ws: Workspace, doc: MythicDoc, position: Position) => boolean;
+    };
+    ```
+
+    The LSP completion handler uses the conditions accordingly.
+
+- Added the `SchemaObject#addCompletions` method:
+
+    ```ts
+    private addCompletions(
+        ws: Workspace,
+        doc: MythicDoc,
+        value: YAMLMap.Parsed,
+        properties: Record<string, SchemaObjectProperty>,
+        keyPrefix = "",
+    ): RangedCompletionItems[] {
+    ```
+
+- Added the `recursedPairs` function:
+
+    ```ts
+    function recursedPairs(map: YAMLMap.Parsed): Pair<ParsedNode, ParsedNode | null>[] {
+    ```
+
+### Changed
+
+- Changed the `SchemaObject#findValueKey` method:
+
+  - From:
+
+    ```ts
+    protected findValueKey(
+        ws: Workspace,
+        doc: MythicDoc,
+        node: YAMLMap.Parsed | Pair<ParsedNode, ParsedNode | null>,
+        key: string,
+    ): Pair<ParsedNode, ParsedNode | null> | null {
+    ```
+
+  - To:
+
+    ```ts
+    protected findValueKey(
+        ws: Workspace,
+        doc: MythicDoc,
+        node: YAMLMap.Parsed | Pair<ParsedNode, ParsedNode | null>,
+        key: string,
+    ): Pair<ParsedNode, ParsedNode | null>[] {
+    ```
+
+- Changed the `SchemaObject#nodeHasProperty` method:
+
+  - From:
+
+    ```ts
+    protected nodeHasProperty(
+        ws: Workspace,
+        doc: MythicDoc,
+        node: YAMLMap.Parsed | Pair<ParsedNode, ParsedNode | null>,
+        aliases: string[],
+    ): Pair<ParsedNode, ParsedNode | null> | null {
+    ```
+
+  - To:
+
+    ```ts
+    protected nodeHasProperty(
+        ws: Workspace,
+        doc: MythicDoc,
+        node: YAMLMap.Parsed | Pair<ParsedNode, ParsedNode | null>,
+        aliases: string[],
+    ): Pair<ParsedNode, ParsedNode | null>[] {
+    ```
+
+- `SchemObject`s now completely operate using submapped properties. Exceptions for `SchemaMap`s are implemented directly in the class.
+
 ### Fixed
 
 - Fixed some issues with calculations in the `posIsIn` function (especially when the range and position are in the same line).
