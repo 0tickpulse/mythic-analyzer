@@ -1,9 +1,12 @@
 const STDOUT_LOGGER: Logger = {
     /* eslint-disable no-console -- console is fine here */
     supportsColor: true,
-    debug: <T>(arg: T) => {
-        console.debug(arg);
-        return arg;
+    // @ts-expect-error -- TS is being weird about the return type of this function
+    debug: (...args: unknown[]) => {
+        console.debug(...args);
+        if (args.length === 1) {
+            return args[0];
+        }
     },
     log: console.log,
     warn: console.warn,
