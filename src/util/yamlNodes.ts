@@ -1,6 +1,6 @@
 import { isMap } from "yaml";
 
-import type { ParsedNode } from "yaml";
+import type { Pair, ParsedNode, YAMLMap } from "yaml";
 import type { MythicDoc } from "../doc/index.js";
 
 function nodePreciseSource(doc: MythicDoc, node: ParsedNode) {
@@ -26,4 +26,15 @@ function getNodeInMap(node: ParsedNode, path: string): ParsedNode | null {
     return current;
 }
 
-export { nodePreciseSource, getNodeInMap };
+function recursedPairs(map: YAMLMap.Parsed): Pair<ParsedNode, ParsedNode | null>[] {
+    const pairs: Pair<ParsedNode, ParsedNode | null>[] = [];
+    for (const pair of map.items) {
+        pairs.push(pair);
+        if (isMap(pair.value)) {
+            pairs.push(...recursedPairs(pair.value));
+        }
+    }
+    return pairs;
+}
+
+export { nodePreciseSource, getNodeInMap, recursedPairs };
