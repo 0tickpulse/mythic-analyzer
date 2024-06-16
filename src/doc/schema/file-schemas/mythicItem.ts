@@ -89,6 +89,7 @@ export const MYTHIC_ITEM_SCHEMA: SchemaMap = new SchemaMap(
             description: `Sets the amount of durability to take off the item.
 
             ${mdSeeAlso("Items/Items#durability")}`,
+            aliases: ["Options.Durability"],
         },
         Attributes: {
             schema: new SchemaObject(),
