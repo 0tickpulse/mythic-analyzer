@@ -1,4 +1,4 @@
-import type { Range } from "vscode-languageserver-textdocument";
+import type { Position, Range } from "vscode-languageserver-textdocument";
 import type { CompletionItem, Diagnostic, Hover } from "vscode-languageserver";
 import type { ParsedNode } from "yaml";
 import type { MythicSkill } from "../../document-models/mythicskill.js";
@@ -27,11 +27,7 @@ class ValidationResult {
             items: [],
         },
         public readonly highlights: Highlight[] = [],
-        public readonly completionItems: {
-            range: Range;
-            // pos: Position;
-            items: CompletionItem[];
-        }[] = [],
+        public readonly completionItems: RangedCompletionItems[] = [],
     ) {}
 
     /**
@@ -257,13 +253,21 @@ class Schema {
     }
 }
 
+type RangedCompletionItems = {
+    range: Range;
+    // pos: Position;
+    items: CompletionItem[];
+    conditions?: (ws: Workspace, doc: MythicDoc, position: Position) => boolean;
+};
+
 /**
  * A value or a function that returns a value.
  *
  * @param T The type of the value. This cannot be a function, which is reflected in the type.
  */
-export type SchemaValueOrFn<T> = T extends (...args: unknown[]) => unknown
+type SchemaValueOrFn<T> = T extends (...args: unknown[]) => unknown
     ? never
     : T | ((ws: Workspace, doc: MythicDoc, value: ParsedNode) => T);
 
 export { Schema, ValidationResult };
+export type { RangedCompletionItems, SchemaValueOrFn };
