@@ -18,6 +18,9 @@ function posIsIn(pos: Position, range: Range) {
     if (pos.line === range.start.line) {
         return pos.character >= range.start.character;
     }
+    if (pos.line === range.end.line) {
+        return pos.character <= range.end.character;
+    }
     return (
         pos.line >= range.start.line
         && pos.line <= range.end.line
